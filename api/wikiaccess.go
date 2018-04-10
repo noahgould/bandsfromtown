@@ -83,9 +83,5 @@ func main() {
 	location = strings.Replace(location, "[", "", -1)
 	location = strings.Replace(location, "&nbsp;", " ", -1)
 	fmt.Println(location)
-	// for i := range infoBoxItems {
-	// 	fmt.Println(infoBoxItems[i])
-	// 	fmt.Println("*****")
-	// }
 
 }
