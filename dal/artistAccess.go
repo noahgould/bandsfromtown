@@ -11,12 +11,12 @@ import (
 
 //Artist data type including some basic information and location.
 type Artist struct {
-	ID           int    `json:"id"`
-	Name         string `json:"name"`
-	Location     `json:"location"`
-	Genre        string `json:"genre"`
-	SpotifyID    int    `json:"spotify_id"`
-	WikipediaURL string `json:"wikipedia_url"`
+	ID           int    `db:"id" json:"id"`
+	Name         string `db:"name" json:"name"`
+	Location     ` db:"hometown" json:"location"`
+	Genre        string `db:"genre" json:"genre"`
+	SpotifyID    int    `db:"spotify_id" json:"spotify_id"`
+	WikipediaURL string `db:"wikipedia_url" json:"wikipedia_url"`
 }
 
 //ArtistStore database access.
@@ -29,10 +29,10 @@ func NewArtistStore(db *sql.DB) ArtistStore {
 	return ArtistStore{DB: db}
 }
 
-func (as *ArtistStore) addArtist(artist Artist) (artistID int, err error) {
+func (as *ArtistStore) AddArtist(artist Artist) (artistID int, err error) {
 	query := `
 	INSERT artist
-	SET Name = ?, Location = ?, Genre = ?, SpotifyID = ?, WikipediaURL = ?
+	SET name = ?, hometown = ?, genre = ?, spotify_id = ?, wikipedia_url = ?
 	`
 	res, err := as.DB.Exec(query, artist.Name, artist.Location.ID, artist.Genre, artist.SpotifyID, artist.WikipediaURL)
 
@@ -48,7 +48,7 @@ func (as *ArtistStore) addArtist(artist Artist) (artistID int, err error) {
 	return artist.ID, nil
 }
 
-func (as *ArtistStore) getArtistByID(artistID int) (artist Artist, err error) {
+func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 	query := `
 		SELECT * FROM artist
 		WHERE 

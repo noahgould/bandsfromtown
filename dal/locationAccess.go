@@ -1,6 +1,7 @@
 package dal
 
 import (
+
 	//mysql driver
 	"log"
 
@@ -27,7 +28,7 @@ func NewLocationStore(db *sql.DB) LocationStore {
 	return LocationStore{DB: db}
 }
 
-func (ls *LocationStore) addLocation(location Location) (locationID int, err error) {
+func (ls *LocationStore) AddLocation(location Location) (locationID int, err error) {
 	query := `
 	INSERT location
 	SET City = ?, State = ?, Country = ?
@@ -46,7 +47,7 @@ func (ls *LocationStore) addLocation(location Location) (locationID int, err err
 	return location.ID, nil
 }
 
-func (ls *LocationStore) getLocationByID(locationID int) (location Location, err error) {
+func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err error) {
 	query := `
 		SELECT * FROM location
 		WHERE 
@@ -63,7 +64,7 @@ func (ls *LocationStore) getLocationByID(locationID int) (location Location, err
 	return location, err
 }
 
-func (ls *LocationStore) getArtistsByLocationID(locationID int) (artists []Artist, err error) {
+func (ls *LocationStore) GetArtistsByLocationID(locationID int) (artists []Artist, err error) {
 	query := `
 		SELECT * FROM artist
 		WHERE 
