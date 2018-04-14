@@ -7,6 +7,10 @@ import (
 	"github.com/noahgould/bandsfromtown/dal"
 )
 
+func declareRoutes() {
+	http.HandleFunc("/artist", LookupArtist)
+}
+
 func startWebServer() {
 	http.HandleFunc("/", hello)
 	http.ListenAndServe(":8080", nil)
