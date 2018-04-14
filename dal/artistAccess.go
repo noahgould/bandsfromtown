@@ -48,6 +48,7 @@ func (as *ArtistStore) AddArtist(artist Artist) (artistID int, err error) {
 	return artist.ID, nil
 }
 
+//GetArtistByID returns the artist with a matching id.
 func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 	query := `
 		SELECT * FROM artist
@@ -64,4 +65,31 @@ func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 	err = res.Scan(&artist.ID, &artist.Name, &artist.Location, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
 
 	return artist, err
+}
+
+//GetArtistsByName returns the artist with a matching name.
+func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, err error) {
+	query := `
+		SELECT * FROM artist
+		WHERE 
+		name = ?
+	`
+
+	rows, err := as.DB.Query(query, artistName)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for rows.Next() {
+		var artist Artist
+		err = rows.Scan(&artist.ID, &artist.Name, &artist.Location, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		artists = append(artists, artist)
+	}
+
+	return artists, err
 }

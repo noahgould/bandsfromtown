@@ -4,12 +4,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/noahgould/bandsfromtown/api"
 	"github.com/noahgould/bandsfromtown/dal"
 )
-
-func declareRoutes() {
-	http.HandleFunc("/artist", LookupArtist)
-}
 
 func startWebServer() {
 	http.HandleFunc("/", hello)
@@ -22,37 +19,15 @@ func hello(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	startWebServer()
-
 	db, err := dal.StartDB("noah:bigDBpass@tcp(localhost)/bandsfromtown")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	newLocation := dal.Location{
-		State:   "Nebraska",
-		City:    "Omaha",
-		Country: "U>S>A"}
-
-	newArtist := dal.Artist{
-		Name:     "cheeseballs",
-		Location: newLocation,
-		Genre:    "good"}
-
 	artistStore := dal.NewArtistStore(db)
-	locationStore := dal.NewLocationStore(db)
+	artistController := api.NewArtistController(artistStore)
+	artistController.Register()
 
-	newLocation.ID, err = locationStore.AddLocation(newLocation)
-	newArtist.Location.ID = newLocation.ID
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	newArtist.ID, err = artistStore.AddArtist(newArtist)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	startWebServer()
 
 }
