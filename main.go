@@ -25,7 +25,8 @@ func main() {
 	}
 
 	artistStore := dal.NewArtistStore(db)
-	artistController := api.NewArtistController(artistStore)
+	locationStore := dal.NewLocationStore(db)
+	artistController := api.NewArtistController(artistStore, locationStore)
 	artistController.Register()
 
 	startWebServer()
