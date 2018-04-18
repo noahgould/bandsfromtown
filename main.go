@@ -4,21 +4,18 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
+
 	"github.com/noahgould/bandsfromtown/api"
 	"github.com/noahgould/bandsfromtown/dal"
 )
 
-func startWebServer() {
-	http.HandleFunc("/", hello)
-	http.ListenAndServe(":8080", nil)
-}
-
-func hello(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hello!"))
-}
+// func startWebServer(r *Router) {
+// 	http.ListenAndServe(":8080", r)
+// }
 
 func main() {
-
+	r := mux.NewRouter()
 	db, err := dal.StartDB("noah:bigDBpass@tcp(localhost)/bandsfromtown")
 	if err != nil {
 		log.Fatal(err)
@@ -27,8 +24,11 @@ func main() {
 	artistStore := dal.NewArtistStore(db)
 	locationStore := dal.NewLocationStore(db)
 	artistController := api.NewArtistController(artistStore, locationStore)
-	artistController.Register()
 
-	startWebServer()
+	r.HandleFunc("/artist/{artist}", artistController.LookupArtist)
+
+	http.ListenAndServe(":8080", r)
+
+	//startWebServer(artistController, r)
 
 }

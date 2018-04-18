@@ -2,12 +2,13 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/noahgould/bandsfromtown/dal"
 )
 
 type page struct {
@@ -29,13 +30,37 @@ type wikiApiResult struct {
 }
 
 func wikipediaFormat(artistName string) string {
-	return strings.Replace(artistName, " ", "%20", -1)
+	artistName = strings.Replace(artistName, " ", "%20", -1)
+	return strings.Replace(artistName, "_", "%20", -1)
+}
+
+func locationStringToStruct(location string) dal.Location {
+	locationPieces := strings.Split(location, ",")
+	for i := range locationPieces {
+		locationPieces[i] = strings.TrimSpace(locationPieces[i])
+	}
+
+	var state, country string
+	city := locationPieces[0]
+	if len(locationPieces) == 3 {
+		state = locationPieces[1]
+		country = locationPieces[2]
+	} else {
+		state = "unknown"
+		country = locationPieces[1]
+	}
+
+	return dal.Location{
+		City:    city,
+		State:   state,
+		Country: country,
+	}
 }
 
 //LookupArtistLocation queries wikipedia for an artists location and returns it.
-func LookupArtistLocation(artist string) string {
-	url := "http://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=" + artist + "&rvsection=0"
+func LookupArtistLocation(artist string) dal.Location {
 
+	url := "http://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=" + wikipediaFormat(artist) + "&rvsection=0"
 	wikiClient := http.Client{
 		Timeout: time.Second * 2,
 	}
@@ -63,21 +88,27 @@ func LookupArtistLocation(artist string) string {
 	if jsonErr != nil {
 		log.Fatal(jsonErr)
 	}
-
 	var infoBoxItems []string
 	for _, p := range pageInfo.Query.Pages {
-		if strings.Contains(p.Revisions[0].Content, "origin =") {
-			infoBoxItems = strings.Split(p.Revisions[0].Content, "origin =")
-		} else if strings.Contains(p.Revisions[0].Content, "birth_place =") {
-			infoBoxItems = strings.Split(p.Revisions[0].Content, "birth_place =")
-		} else {
-			fmt.Println("No birthplace/origin data")
+
+		if strings.Contains(p.Revisions[0].Content, "birth_place") && !strings.Contains(p.Revisions[0].Content, "SOURCE BIRTHPLACE") {
+			infoBoxItems = strings.Split(p.Revisions[0].Content, "birth_place")
+			infoBoxItems = strings.Split(infoBoxItems[1], "=")
+		} else if strings.Contains(p.Revisions[0].Content, "origin") && !strings.Contains(p.Revisions[0].Content, "SOURCE ORIGIN") {
+			infoBoxItems = strings.Split(p.Revisions[0].Content, "origin")
+			infoBoxItems = strings.Split(infoBoxItems[1], "=")
 		}
 	}
-	endOfLocation := strings.Index(infoBoxItems[1], "|")
-	location := strings.Trim(infoBoxItems[1][0:endOfLocation], " ")
-	location = strings.Replace(location, "]", "", -1)
-	location = strings.Replace(location, "[", "", -1)
-	location = strings.Replace(location, "&nbsp;", " ", -1)
-	return location
+
+	if len(infoBoxItems) > 0 {
+		endOfLocation := strings.Index(infoBoxItems[1], "|")
+		location := strings.Trim(infoBoxItems[1][0:endOfLocation], "")
+		location = strings.Replace(location, "]", "", -1)
+		location = strings.Replace(location, "[", "", -1)
+		location = strings.Replace(location, "&nbsp;", " ", -1)
+		location = strings.Replace(location, "\n", "", -1)
+		return locationStringToStruct(location)
+	} else {
+		return locationStringToStruct("null, null, null")
+	}
 }

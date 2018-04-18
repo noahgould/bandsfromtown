@@ -83,7 +83,7 @@ func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, er
 
 	for rows.Next() {
 		var artist Artist
-		err = rows.Scan(&artist.ID, &artist.Name, &artist.Location, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
+		err = rows.Scan(&artist.ID, &artist.Name, &artist.Location.ID, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
 		if err != nil {
 			log.Fatal(err)
 		}
