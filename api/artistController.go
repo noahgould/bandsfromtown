@@ -45,7 +45,8 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 
 		if artists == nil {
 			artistLocation := LookupArtistLocation(artistName)
-
+			gMC := NewGoogleMapsController()
+			artistLocation = *gMC.NormalizeLocation(artistLocation)
 			artistLocation.ID, err = ac.locationStore.AddLocation(artistLocation)
 
 			if err != nil {
