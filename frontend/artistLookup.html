@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<style>
+    div {
+        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+    }
+</style>
+
+<html>
+<body>
+<div style="display:inline-block">
+    <h1>Where is</h1>
+</div>
+<div style="display:inline-block">
+        <input type="text" id="artistInput" name="artistname" style="font-size: 24pt" >
+</div>
+<div style="display:inline-block">
+        <h1>From?</h1>
+</div>
+
+<div>
+    <h1 id="full-location"></h1>
+    <h1 id="city"></h1>
+    <h1 id="state"></h1>
+    <h1 id="country"></h1>
+</div>
+<script>
+    document.getElementById("artistInput")
+        .addEventListener("keyup", function(event) {
+            event.preventDefault();
+            if (event.keyCode === 13 ) {
+                lookupArtist()
+            }
+        })
+
+    function lookupArtist() {
+        var artistName = document.getElementById("artistInput").value;
+        console.log(artistName);
+        let request = new XMLHttpRequest();
+        let url = "http://localhost:8080/artist/" + artistName;
+        request.open("GET", url, true);
+        request.setRequestHeader("Content-type", "application/json");
+        request.send();
+        request.onreadystatechange = function () {
+        var DONE = 4; // readyState 4 means the request is done.
+        var OK = 200; // status 200 is a successful return.
+        if (request.readyState === DONE) {
+            if (request.status === OK) 
+            var response = JSON.parse(request.responseText);
+            console.log(response); // 'This is the returned text.'
+            var resultP = document.getElementById("results")
+
+            document.getElementById("full-location").innerHTML = response[0].location.location_string
+            // document.getElementById("city").innerHTML = response[0].location.city
+            // document.getElementById("state").innerHTML = response[0].location.state
+            // document.getElementById("country").innerHTML = response[0].location.country
+
+        } else {
+            console.log('Error: ' + request.status); // An error occurred during the request.
+        }
+        }
+        }
+    
+
+</script>
+
+</body>
+</html>
