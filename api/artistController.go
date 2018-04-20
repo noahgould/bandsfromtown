@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/noahgould/bandsfromtown/dal"
@@ -25,19 +25,16 @@ func NewArtistController(newArtistStore dal.ArtistStore, newLocationStore dal.Lo
 
 func (ac *ArtistController) Register() {
 	http.HandleFunc("/artist", ac.LookupArtist)
-	fmt.Println("register reached.")
 }
 
 func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request) {
 
-	artistName := mux.Vars(r)["artist"]
-
+	artistName := strings.Title(mux.Vars(r)["artist"])
 	if artistName == "" {
 		w.Write([]byte("No artist entered."))
 	} else {
 
 		artists, err := ac.artistStore.GetArtistsByName(artistName)
-		fmt.Println("post db call reached.")
 
 		if err != nil {
 			log.Fatal(err)
@@ -60,6 +57,13 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 
 			newArtist.ID, err = ac.artistStore.AddArtist(newArtist)
 			artists = append(artists, newArtist)
+		}
+
+		for i, artist := range artists {
+			artists[i].Location, err = ac.locationStore.GetLocationByID(artist.Location.ID)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		if err := json.NewEncoder(w).Encode(artists); err != nil {

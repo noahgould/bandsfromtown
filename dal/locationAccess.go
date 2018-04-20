@@ -33,9 +33,9 @@ func NewLocationStore(db *sql.DB) LocationStore {
 func (ls *LocationStore) AddLocation(location Location) (locationID int, err error) {
 	query := `
 	INSERT location
-	SET City = ?, State = ?, Country = ?
+	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?
 	`
-	res, err := ls.DB.Exec(query, location.City, location.State, location.Country)
+	res, err := ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID)
 
 	if err != nil {
 		log.Fatal(err)
@@ -61,7 +61,7 @@ func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err
 		log.Fatal(err)
 	}
 
-	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country)
+	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID)
 
 	return location, err
 }

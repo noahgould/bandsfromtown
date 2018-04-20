@@ -108,7 +108,8 @@ func LookupArtistLocation(artist string) dal.Location {
 		location = strings.Replace(location, "&nbsp;", " ", -1)
 		location = strings.Replace(location, "\n", "", -1)
 		return locationStringToStruct(location)
-	} else {
-		return locationStringToStruct("null, null, null")
 	}
+
+	return locationStringToStruct("null, null, null")
+
 }
