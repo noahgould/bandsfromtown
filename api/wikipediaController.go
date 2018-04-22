@@ -89,24 +89,36 @@ func LookupArtistLocation(artist string) dal.Location {
 		log.Fatal(jsonErr)
 	}
 	var infoBoxItems []string
+	originGood := false
+	birthPlaceGood := false
 	for _, p := range pageInfo.Query.Pages {
-
-		if strings.Contains(p.Revisions[0].Content, "birth_place") && !strings.Contains(p.Revisions[0].Content, "SOURCE BIRTHPLACE") {
-			infoBoxItems = strings.Split(p.Revisions[0].Content, "birth_place")
-			infoBoxItems = strings.Split(infoBoxItems[1], "=")
-		} else if strings.Contains(p.Revisions[0].Content, "origin") && !strings.Contains(p.Revisions[0].Content, "SOURCE ORIGIN") {
+		if strings.Contains(p.Revisions[0].Content, "origin") {
 			infoBoxItems = strings.Split(p.Revisions[0].Content, "origin")
 			infoBoxItems = strings.Split(infoBoxItems[1], "=")
+			if strings.Count(infoBoxItems[1], ",") > 0 {
+				originGood = true
+			}
+		}
+
+		if !originGood {
+			if strings.Contains(p.Revisions[0].Content, "birth_place") {
+				infoBoxItems = strings.Split(p.Revisions[0].Content, "birth_place")
+				infoBoxItems = strings.Split(infoBoxItems[1], "=")
+				if strings.Count(infoBoxItems[1], ",") > 0 {
+					birthPlaceGood = true
+				}
+			}
 		}
 	}
 
-	if len(infoBoxItems) > 0 {
+	if originGood || birthPlaceGood {
 		endOfLocation := strings.Index(infoBoxItems[1], "|")
 		location := strings.Trim(infoBoxItems[1][0:endOfLocation], "")
 		location = strings.Replace(location, "]", "", -1)
 		location = strings.Replace(location, "[", "", -1)
 		location = strings.Replace(location, "&nbsp;", " ", -1)
 		location = strings.Replace(location, "\n", "", -1)
+		location = strings.Replace(location, "nowrap", "", -1)
 		return locationStringToStruct(location)
 	}
 
