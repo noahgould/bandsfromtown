@@ -66,6 +66,23 @@ func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err
 	return location, err
 }
 
+func (ls *LocationStore) GetLocationByGoogleID(locationID int) (location Location, err error) {
+	query := `
+		SELECT * FROM location
+		WHERE 
+		google_place_id = ?
+	`
+	res := ls.DB.QueryRow(query, locationID)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID)
+
+	return location, err
+}
+
 func (ls *LocationStore) GetArtistsByLocationID(locationID int) (artists []Artist, err error) {
 	query := `
 		SELECT * FROM artist
