@@ -24,7 +24,7 @@ func TestLookupArtistLocation(t *testing.T) {
 			City: "Southwark", State: "London", Country: "England",
 		}},
 		{"Ghostface Killah", dal.Location{
-			City: "Southwark", State: "London", Country: "England",
+			City: "New York City", State: "New York", Country: "U.S.",
 		}},
 	}
 

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -35,25 +36,31 @@ func wikipediaFormat(artistName string) string {
 }
 
 func locationStringToStruct(location string) dal.Location {
+	fmt.Println(location)
 	locationPieces := strings.Split(location, ",")
 	for i := range locationPieces {
+		if strings.Contains(locationPieces[i], "(") {
+			locationPieces[i] = strings.Split(locationPieces[i], "(")[0]
+		}
 		locationPieces[i] = strings.TrimSpace(locationPieces[i])
 	}
 
-	var state, country string
-	city := locationPieces[0]
-	if len(locationPieces) == 3 {
-		state = locationPieces[1]
-		country = locationPieces[2]
+	var state, country, city string
+	if len(locationPieces) >= 3 {
+		city = locationPieces[len(locationPieces)-3]
+		state = locationPieces[len(locationPieces)-2]
+		country = locationPieces[len(locationPieces)-1]
 	} else {
+		city = locationPieces[0]
 		state = "unknown"
 		country = locationPieces[1]
 	}
 
 	return dal.Location{
-		City:    city,
-		State:   state,
-		Country: country,
+		City:         city,
+		State:        state,
+		Country:      country,
+		FullLocation: location,
 	}
 }
 
@@ -112,7 +119,7 @@ func LookupArtistLocation(artist string) dal.Location {
 	}
 
 	if originGood || birthPlaceGood {
-		endOfLocation := strings.Index(infoBoxItems[1], "|")
+		endOfLocation := strings.Index(infoBoxItems[1], "| ")
 		location := strings.Trim(infoBoxItems[1][0:endOfLocation], "")
 		location = strings.Replace(location, "]", "", -1)
 		location = strings.Replace(location, "[", "", -1)
