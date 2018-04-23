@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -36,12 +35,15 @@ func wikipediaFormat(artistName string) string {
 }
 
 func locationStringToStruct(location string) dal.Location {
-	fmt.Println(location)
 	locationPieces := strings.Split(location, ",")
 	for i := range locationPieces {
 		if strings.Contains(locationPieces[i], "(") {
 			locationPieces[i] = strings.Split(locationPieces[i], "(")[0]
 		}
+		if strings.Contains(locationPieces[i], "|") {
+			locationPieces[i] = strings.Split(locationPieces[i], "|")[0]
+		}
+
 		locationPieces[i] = strings.TrimSpace(locationPieces[i])
 	}
 
@@ -69,7 +71,7 @@ func LookupArtistLocation(artist string) dal.Location {
 
 	url := "http://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=" + wikipediaFormat(artist) + "&rvsection=0"
 	wikiClient := http.Client{
-		Timeout: time.Second * 2,
+		Timeout: time.Second * 5,
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)

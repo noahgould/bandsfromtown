@@ -31,6 +31,11 @@ func TestNormalizeLocation(t *testing.T) {
 		}, dal.Location{
 			City: "London", State: "England", Country: "UK", GooglePlaceID: "ChIJdd4hrwug2EcRmSrV3Vo6llI", FullLocation: "London, England, UK",
 		}},
+		{dal.Location{
+			City: "Staten Island", State: " New York City", Country: "New York (state)",
+		}, dal.Location{
+			City: "London", State: "England", Country: "UK", GooglePlaceID: "ChIJdd4hrwug2EcRmSrV3Vo6llI", FullLocation: "London, England, UK",
+		}},
 	}
 
 	gMController := NewGoogleMapsController()

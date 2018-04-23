@@ -33,6 +33,7 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) *dal.L
 	} else {
 		locationString = strings.Join([]string{location.City, location.State, location.Country}, ",")
 	}
+
 	place := &maps.PlaceAutocompleteRequest{
 		Input: locationString,
 		Types: maps.AutocompletePlaceTypeRegions,
@@ -45,7 +46,6 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) *dal.L
 	}
 
 	normalizedLocation := &dal.Location{
-
 		FullLocation:  placeResult.Predictions[0].Description,
 		GooglePlaceID: placeResult.Predictions[0].PlaceID,
 	}
