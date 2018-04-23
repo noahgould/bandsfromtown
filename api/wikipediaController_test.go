@@ -26,6 +26,9 @@ func TestLookupArtistLocation(t *testing.T) {
 		{"Ghostface Killah", dal.Location{
 			City: "New York City", State: "New York", Country: "U.S.",
 		}},
+		{"Jeff Rosenstock", dal.Location{
+			City: "New York City", State: "New York", Country: "U.S.",
+		}},
 	}
 
 	for _, testArtist := range table {

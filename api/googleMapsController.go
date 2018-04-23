@@ -41,24 +41,31 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) *dal.L
 
 	placeResult, err := gmc.mapsClient.PlaceAutocomplete(context.Background(), place)
 
+	var normalizedLocation dal.Location
 	if err != nil {
-		log.Fatal(err)
-	}
+		log.Print(err)
+		normalizedLocation = location
+		normalizedLocation.FullLocation = "location could not be found"
+		normalizedLocation.GooglePlaceID = "-1"
+		normalizedLocation.ID = 0
 
-	normalizedLocation := &dal.Location{
-		FullLocation:  placeResult.Predictions[0].Description,
-		GooglePlaceID: placeResult.Predictions[0].PlaceID,
-	}
-
-	if len(placeResult.Predictions[0].Terms) < 3 {
-		normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
-		normalizedLocation.State = ""
-		normalizedLocation.Country = placeResult.Predictions[0].Terms[1].Value
 	} else {
-		normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
-		normalizedLocation.State = placeResult.Predictions[0].Terms[1].Value
-		normalizedLocation.Country = placeResult.Predictions[0].Terms[2].Value
+		normalizedLocation = dal.Location{
+			FullLocation:  placeResult.Predictions[0].Description,
+			GooglePlaceID: placeResult.Predictions[0].PlaceID,
+		}
+
+		if len(placeResult.Predictions[0].Terms) < 3 {
+			normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
+			normalizedLocation.State = ""
+			normalizedLocation.Country = placeResult.Predictions[0].Terms[1].Value
+		} else {
+			normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
+			normalizedLocation.State = placeResult.Predictions[0].Terms[1].Value
+			normalizedLocation.Country = placeResult.Predictions[0].Terms[2].Value
+		}
+
 	}
 
-	return normalizedLocation
+	return &normalizedLocation
 }

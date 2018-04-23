@@ -34,7 +34,7 @@ func TestNormalizeLocation(t *testing.T) {
 		{dal.Location{
 			City: "Staten Island", State: " New York City", Country: "New York (state)",
 		}, dal.Location{
-			City: "London", State: "England", Country: "UK", GooglePlaceID: "ChIJdd4hrwug2EcRmSrV3Vo6llI", FullLocation: "London, England, UK",
+			City: "nil", State: "nil", Country: "nil", GooglePlaceID: "-1", FullLocation: "location could not be found",
 		}},
 	}
 
