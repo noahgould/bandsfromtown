@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -44,7 +45,18 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			artistLocation := LookupArtistLocation(artistName)
 			gMC := NewGoogleMapsController()
 			artistLocation = *gMC.NormalizeLocation(artistLocation)
-			artistLocation.ID, err = ac.locationStore.AddLocation(artistLocation)
+
+			locationAlreadyStored, err := ac.locationStore.GetLocationByGoogleID(artistLocation.GooglePlaceID)
+
+			if err != nil {
+				if err == sql.ErrNoRows {
+					artistLocation.ID, err = ac.locationStore.AddLocation(artistLocation)
+				} else {
+					log.Fatal(err)
+				}
+			} else {
+				artistLocation = locationAlreadyStored
+			}
 
 			if err != nil {
 				log.Fatal(err)
