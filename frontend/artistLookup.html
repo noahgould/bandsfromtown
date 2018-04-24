@@ -23,6 +23,16 @@
     <h1 id="state"></h1>
     <h1 id="country"></h1>
 </div>
+<div>
+    <p1> Location wrong?</p1>
+    <button type="button" id="updateLocation" onclick="showLocationUpdate">Update it.</button>
+</div>
+<div id=artistUpdate style="display:none;">
+    <input type="text" id="newCity">
+    <input type="text" id="newState">
+    <input type="text" id="newCountry">
+    <button type="button" id="enterLocation" onclick="updateLocation">Update</button>
+</div>
 <script>
     document.getElementById("artistInput")
         .addEventListener("keyup", function(event) {
@@ -30,11 +40,32 @@
             if (event.keyCode === 13 ) {
                 lookupArtist()
             }
-        })
+        });
+    
+
+    function showLocationUpdate() {
+        document.getElementById("artistUpdate")
+            .style.display = "block"
+    }
+
+    function updateLocation() {
+        var city = document.getElementById("newCity").value;
+        var state = document.getElementById("newState").value;
+        var country = document.getElementById("newCountry").value;
+        if (city == "" || state == "" || country == "") {
+            document.getElementById("full-location").innerHTML = "One location element is missing."
+        } else {
+            var locationString = city + "," + state + "," + country;
+            let request = new XMLHttpRequest();
+            let url = "http://localhost:8080/artist/updateLocation"
+            request.open("POST", url, true);
+            request.setRequestHeader("Content-type", "application/json")
+            request.send("artistID=" + document.getElementById("updateLocation").value + "location=" + locationString)
+        }
+    }
 
     function lookupArtist() {
         var artistName = document.getElementById("artistInput").value;
-        console.log(artistName);
         let request = new XMLHttpRequest();
         let url = "http://localhost:8080/artist/" + artistName;
         request.open("GET", url, true);
@@ -50,9 +81,8 @@
             var resultP = document.getElementById("results")
 
             document.getElementById("full-location").innerHTML = response[0].location.location_string
-            // document.getElementById("city").innerHTML = response[0].location.city
-            // document.getElementById("state").innerHTML = response[0].location.state
-            // document.getElementById("country").innerHTML = response[0].location.country
+            document.getElementById("updateLocation").value = response[0].ID
+
 
         } else {
             console.log('Error: ' + request.status); // An error occurred during the request.

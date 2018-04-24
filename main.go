@@ -26,6 +26,7 @@ func main() {
 	artistController := api.NewArtistController(artistStore, locationStore)
 
 	r.HandleFunc("/artist/{artist}", artistController.LookupArtist)
+	r.HandleFunc("/artist", artistController.Index)
 
 	http.ListenAndServe(":8080", r)
 

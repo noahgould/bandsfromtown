@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -28,6 +29,10 @@ func (ac *ArtistController) Register() {
 	http.HandleFunc("/artist", ac.LookupArtist)
 }
 
+func (ac *ArtistController) Index(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, r.URL.Path[1:])
+}
+
 func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request) {
 
 	artistName := strings.Title(mux.Vars(r)["artist"])
@@ -46,20 +51,8 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			gMC := NewGoogleMapsController()
 			artistLocation = *gMC.NormalizeLocation(artistLocation)
 
-			locationAlreadyStored, err := ac.locationStore.GetLocationByGoogleID(artistLocation.GooglePlaceID)
-
 			if err != nil {
-				if err == sql.ErrNoRows {
-					artistLocation.ID, err = ac.locationStore.AddLocation(artistLocation)
-				} else {
-					log.Fatal(err)
-				}
-			} else {
-				artistLocation = locationAlreadyStored
-			}
-
-			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
 			}
 
 			newArtist := dal.Artist{
@@ -82,5 +75,54 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			log.Fatal(err)
 		}
 	}
+
+}
+
+func (ac *ArtistController) UpdateArtistLocation(w http.ResponseWriter, r *http.Request) {
+	artistId, err := strconv.Atoi(mux.Vars(r)["artistId"])
+	if err != nil {
+		log.Printf("artistController line 84, %s", err)
+	}
+	newLocationString := mux.Vars(r)["location"]
+	newLocationArray := strings.Split(newLocationString, ",")
+	newLocation := dal.Location{
+		City:    newLocationArray[0],
+		State:   newLocationArray[1],
+		Country: newLocationArray[2],
+	}
+
+	googleMapController := NewGoogleMapsController()
+
+	artistLocation := googleMapController.NormalizeLocation(newLocation)
+
+	artistLocation = ac.checkForExistingLocation(newLocation.GooglePlaceID)
+
+	artistToUpdate, err := ac.artistStore.GetArtistByID(artistId)
+
+	if err != nil {
+		log.Printf("artistController line 103, artist: %d .err: %s", artistToUpdate.ID, err)
+		log.Print(artistToUpdate)
+	}
+
+	artistToUpdate.Location = *artistLocation
+
+	ac.artistStore.UpdateArtist(artistToUpdate)
+}
+
+func (ac *ArtistController) checkForExistingLocation(locationGoogleID string) *dal.Location {
+	locationAlreadyStored, err := ac.locationStore.GetLocationByGoogleID(locationGoogleID)
+
+	var artistLocation dal.Location
+	if err != nil {
+		if err == sql.ErrNoRows {
+			artistLocation.ID, err = ac.locationStore.AddLocation(artistLocation)
+		} else {
+			log.Fatal(err)
+		}
+	} else {
+		artistLocation = locationAlreadyStored
+	}
+
+	return &artistLocation
 
 }

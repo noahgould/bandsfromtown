@@ -93,3 +93,18 @@ func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, er
 
 	return artists, err
 }
+
+func (as *ArtistStore) UpdateArtist(artist Artist) (artistId int, err error) {
+	query := `UPDATE artist
+		SET name = ?, hometown = ?, genre = ?, spotify_id = ?, wikipedia_url = ?
+		WHERE id = ?`
+
+	_, err = as.DB.Exec(query, artist.Name, artist.Location.ID, artist.Genre, artist.SpotifyID, artist.WikipediaURL, artist.ID)
+
+	if err != nil {
+		log.Print(err)
+		return artist.ID, err
+	}
+
+	return artist.ID, nil
+}
