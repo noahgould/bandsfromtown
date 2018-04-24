@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 
@@ -10,13 +11,9 @@ import (
 	"github.com/noahgould/bandsfromtown/dal"
 )
 
-// func startWebServer(r *Router) {
-// 	http.ListenAndServe(":8080", r)
-// }
-
 func main() {
 	r := mux.NewRouter()
-	db, err := dal.StartDB("noah:bigDBpass@tcp(localhost)/bandsfromtown")
+	db, err := dal.StartDB(os.Getenv("CLEARDB_DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,8 +25,11 @@ func main() {
 	r.HandleFunc("/artist/{artist}", artistController.LookupArtist)
 	r.HandleFunc("/artist", artistController.Index)
 
-	http.ListenAndServe(":8080", r)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
-	//startWebServer(artistController, r)
+	http.ListenAndServe(":"+port, r)
 
 }
