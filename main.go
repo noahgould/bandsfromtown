@@ -22,7 +22,7 @@ func main() {
 	locationStore := dal.NewLocationStore(db)
 	artistController := api.NewArtistController(artistStore, locationStore)
 
-	r.HandleFunc("/artist/{artist}", artistController.LookupArtist)
+	r.HandleFunc("/artist/{artist}", artistController.LookupArtist).Methods("GET", "OPTIONS")
 	r.HandleFunc("/artist", artistController.Index)
 	r.PathPrefix("/frontend/").Handler(http.StripPrefix("/frontend/", http.FileServer(http.Dir("frontend"))))
 

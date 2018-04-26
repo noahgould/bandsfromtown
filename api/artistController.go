@@ -35,6 +35,9 @@ func (ac *ArtistController) Index(w http.ResponseWriter, r *http.Request) {
 
 func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request) {
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
 	artistName := strings.Title(mux.Vars(r)["artist"])
 	if artistName == "" {
 		w.Write([]byte("No artist entered."))
@@ -79,7 +82,7 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 }
 
 func (ac *ArtistController) UpdateArtistLocation(w http.ResponseWriter, r *http.Request) {
-	artistId, err := strconv.Atoi(mux.Vars(r)["artistId"])
+	artistId, err := strconv.Atoi(mux.Vars(r)["artistID"])
 	if err != nil {
 		log.Printf("artistController line 84, %s", err)
 	}
