@@ -68,7 +68,7 @@
         var artistName = document.getElementById("artistInput").value;
         let request = new XMLHttpRequest();
         let url = "http://bandsfromtown.herokuapp.com/artist/" + artistName;
-        request.open("GET", url, true);
+        request.open("GET", url, false);
         request.setRequestHeader("Content-type", "application/json");
         request.send();
         request.onreadystatechange = function () {
