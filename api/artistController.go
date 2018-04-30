@@ -46,6 +46,7 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	artistName := parseArtistName(mux.Vars(r)["artist"])
+
 	if artistName == "" {
 		w.Write([]byte("No artist entered."))
 	} else {
@@ -58,14 +59,16 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 
 		if artists == nil {
 			artistLocation := LookupArtistLocation(artistName)
+			log.Println(artistLocation)
 			gMC := NewGoogleMapsController()
 			artistLocation = *gMC.NormalizeLocation(artistLocation)
 
 			if err != nil {
-				log.Print(err)
+				log.Println(err)
 			}
 
 			artistLocation = *ac.checkForExistingLocation(artistLocation)
+			log.Println(artistLocation)
 
 			newArtist := dal.Artist{
 				Name:     artistName,
