@@ -33,12 +33,19 @@ func (ac *ArtistController) Index(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
 
+func parseArtistName(name string) string {
+	parsedName := strings.Title(name)
+	parsedName = strings.Replace(parsedName, "%20", " ", -1)
+	parsedName = strings.Replace(parsedName, "_", " ", -1)
+	return parsedName
+}
+
 func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-	artistName := strings.Title(mux.Vars(r)["artist"])
+	artistName := parseArtistName(mux.Vars(r)["artist"])
 	if artistName == "" {
 		w.Write([]byte("No artist entered."))
 	} else {
@@ -57,6 +64,8 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			if err != nil {
 				log.Print(err)
 			}
+
+			artistLocation = *ac.checkForExistingLocation(artistLocation.GooglePlaceID)
 
 			newArtist := dal.Artist{
 				Name:     artistName,
