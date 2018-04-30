@@ -74,8 +74,7 @@
         request.onreadystatechange = function () {
         var DONE = 4; // readyState 4 means the request is done.
         var OK = 200; // status 200 is a successful return.
-        if (request.readyState === DONE) {
-            if (request.status === OK) 
+        if (request.readyState === DONE || request.readyState === OK) {
             var response = JSON.parse(request.responseText);
             console.log(response); // 'This is the returned text.'
             var resultP = document.getElementById("results")
