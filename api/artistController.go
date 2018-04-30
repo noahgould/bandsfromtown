@@ -76,12 +76,20 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			artists = append(artists, newArtist)
 		}
 
+		log.Println(artists[0])
+		log.Println("Location:")
+		log.Println(artists[0].Location)
+
 		for i, artist := range artists {
 			artists[i].Location, err = ac.locationStore.GetLocationByID(artist.Location.ID)
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
 			}
 		}
+
+		log.Println(artists[0])
+		log.Println("Location:")
+		log.Println(artists[0].Location)
 
 		if err := json.NewEncoder(w).Encode(artists); err != nil {
 			log.Fatal(err)
