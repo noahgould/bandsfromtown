@@ -72,14 +72,21 @@
         request.setRequestHeader("Content-type", "application/json");
         request.send();
         request.onreadystatechange = function () {
-            
+        var DONE = 4; // readyState 4 means the request is done.
+        var OK = 200; // status 200 is a successful return.
+        if (request.readyState === OK) {
+            if (request.readyState === DONE) {
             var response = JSON.parse(request.responseText);
             console.log(response); // 'This is the returned text.'
             var resultP = document.getElementById("results")
 
             document.getElementById("full-location").innerHTML = response[0].location.location_string
             document.getElementById("updateLocation").value = response[0].ID
+            }
 
+        } else {
+            console.log('Error: ' + request.status); // An error occurred during the request.
+        }
         }
         }
     
