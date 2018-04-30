@@ -57,8 +57,8 @@
         } else {
             var locationString = city + "," + state + "," + country;
             let request = new XMLHttpRequest();
-            let url = "http://bandsfromtown.herokuapp.comartist/updateLocation"
-            request.open("POST", url, true);
+            let url = "https://bandsfromtown.herokuapp.comartist/updateLocation"
+            request.open("POST", url, false);
             request.setRequestHeader("Content-type", "application/json")
             request.send("artistID=" + document.getElementById("updateLocation").value + "location=" + locationString)
         }
@@ -67,7 +67,7 @@
     function lookupArtist() {
         var artistName = document.getElementById("artistInput").value;
         let request = new XMLHttpRequest();
-        let url = "http://bandsfromtown.herokuapp.com/artist/" + artistName;
+        let url = "https://bandsfromtown.herokuapp.com/artist/" + artistName;
         request.open("GET", url, false);
         request.setRequestHeader("Content-type", "application/json");
         request.send();
