@@ -34,9 +34,9 @@ func (ac *ArtistController) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func parseArtistName(name string) string {
-	parsedName := strings.Title(name)
-	parsedName = strings.Replace(parsedName, "%20", " ", -1)
+	parsedName := strings.Replace(name, "%20", " ", -1)
 	parsedName = strings.Replace(parsedName, "_", " ", -1)
+	parsedName = strings.Title(parsedName)
 	return parsedName
 }
 

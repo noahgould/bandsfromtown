@@ -72,20 +72,20 @@ func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, er
 	query := `
 		SELECT * FROM artist
 		WHERE 
-		name = ?
-	`
+		name = ?`
 
 	rows, err := as.DB.Query(query, artistName)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil, err
 	}
 
 	for rows.Next() {
 		var artist Artist
 		err = rows.Scan(&artist.ID, &artist.Name, &artist.Location.ID, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 
 		artists = append(artists, artist)
