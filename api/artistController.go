@@ -65,7 +65,7 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 				log.Print(err)
 			}
 
-			artistLocation = *ac.checkForExistingLocation(artistLocation.GooglePlaceID)
+			artistLocation = *ac.checkForExistingLocation(artistLocation)
 
 			newArtist := dal.Artist{
 				Name:     artistName,
@@ -76,20 +76,12 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			artists = append(artists, newArtist)
 		}
 
-		log.Println(json.Marshal(artists[0]))
-		log.Println("Location:")
-		log.Println(json.Marshal(artists[0].Location))
-
 		for i, artist := range artists {
 			artists[i].Location, err = ac.locationStore.GetLocationByID(artist.Location.ID)
 			if err != nil {
 				log.Println(err)
 			}
 		}
-
-		log.Println(json.Marshal(artists[0]))
-		log.Println("Location:")
-		log.Println(json.Marshal(artists[0].Location))
 
 		if err := json.NewEncoder(w).Encode(artists); err != nil {
 			log.Fatal(err)
@@ -115,7 +107,7 @@ func (ac *ArtistController) UpdateArtistLocation(w http.ResponseWriter, r *http.
 
 	artistLocation := googleMapController.NormalizeLocation(newLocation)
 
-	artistLocation = ac.checkForExistingLocation(newLocation.GooglePlaceID)
+	artistLocation = ac.checkForExistingLocation(newLocation)
 
 	artistToUpdate, err := ac.artistStore.GetArtistByID(artistId)
 
@@ -129,20 +121,19 @@ func (ac *ArtistController) UpdateArtistLocation(w http.ResponseWriter, r *http.
 	ac.artistStore.UpdateArtist(artistToUpdate)
 }
 
-func (ac *ArtistController) checkForExistingLocation(locationGoogleID string) *dal.Location {
-	locationAlreadyStored, err := ac.locationStore.GetLocationByGoogleID(locationGoogleID)
+func (ac *ArtistController) checkForExistingLocation(locationToCheck dal.Location) *dal.Location {
+	locationAlreadyStored, err := ac.locationStore.GetLocationByGoogleID(locationToCheck.GooglePlaceID)
 
-	var artistLocation dal.Location
 	if err != nil {
 		if err == sql.ErrNoRows {
-			artistLocation.ID, err = ac.locationStore.AddLocation(artistLocation)
+			locationToCheck.ID, err = ac.locationStore.AddLocation(locationToCheck)
 		} else {
 			log.Fatal(err)
 		}
 	} else {
-		artistLocation = locationAlreadyStored
+		locationToCheck = locationAlreadyStored
 	}
 
-	return &artistLocation
+	return &locationToCheck
 
 }
