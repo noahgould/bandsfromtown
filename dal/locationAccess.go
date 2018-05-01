@@ -58,7 +58,7 @@ func (ls *LocationStore) UpdateLocation(location Location) (locationID int, err 
 	WHERE id = ?
 	`
 
-	_, err = ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude)
+	_, err = ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude, location.ID)
 
 	if err != nil {
 		log.Print(err)
