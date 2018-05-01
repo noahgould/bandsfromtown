@@ -80,7 +80,7 @@ func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err
 		log.Fatal(err)
 	}
 
-	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID)
+	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID, &location.Latitude, &location.Longitude)
 
 	return location, err
 }
@@ -93,7 +93,7 @@ func (ls *LocationStore) GetLocationByGoogleID(locationID string) (location Loca
 	`
 	res := ls.DB.QueryRow(query, locationID)
 
-	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID)
+	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID, &location.Latitude, &location.Longitude)
 
 	return location, err
 }
