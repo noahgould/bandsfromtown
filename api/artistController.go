@@ -68,6 +68,7 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			}
 
 			artistLocation = *ac.checkForExistingLocation(artistLocation)
+			log.Println(artistLocation.Latitude)
 
 			if artistLocation.Latitude == 0 {
 				artistLocationPtr, err := gMC.GetCoordinates(artistLocation)
