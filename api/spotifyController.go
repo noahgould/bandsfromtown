@@ -42,9 +42,9 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	}
 
 	response, err := spotifyClient.Do(req)
-	log.Println(response.Body)
-	log.Println(response.Header)
-	log.Println(response.Request)
+	log.Println(req.RequestURI)
+	log.Println(req.URL)
+	log.Println(response.Status)
 
 	if err != nil {
 		log.Println("SpotifyAuthRequest %s", err.Error())
