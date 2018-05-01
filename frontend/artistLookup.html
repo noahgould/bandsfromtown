@@ -89,14 +89,22 @@
             document.getElementById("full-location").innerHTML = response[0].location.location_string
             document.getElementById("updateLocation").value = response[0].ID
             
-            var map = L.map('mapid').setView([response[0].location.latitude, response[0].location.longitude], 5);
+            if(typeof map !== undefined) {
+                map.removeLayer(marker);
+                marker = new L.marker([response[0].location.latitude, response[0].location.longitude]).addTo(map);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-	            maxZoom: 19,
-	            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            }).addTo(map)
+            } else {
+                var map = L.map('mapid').setView([response[0].location.latitude, response[0].location.longitude], 5);
 
-            var marker = L.marker([response[0].location.latitude, response[0].location.longitude]).addTo(map);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(map)
+
+                var marker = L.marker([response[0].location.latitude, response[0].location.longitude]).addTo(map);
+
+            }
+
         }
         }
     
