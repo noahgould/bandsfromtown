@@ -70,9 +70,10 @@ func (ls *LocationStore) UpdateLocation(location Location) (locationID int, err 
 
 func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err error) {
 	query := `
-		SELECT * FROM location
-		WHERE 
-		id = ?
+	SELECT id, city, state, country, full_location, google_place_id, coalesce(latitude, 0), coalesce(longitude, 0) 
+	FROM location
+	WHERE 
+	id = ?
 	`
 	res := ls.DB.QueryRow(query, locationID)
 
@@ -87,9 +88,10 @@ func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err
 
 func (ls *LocationStore) GetLocationByGoogleID(locationID string) (location Location, err error) {
 	query := `
-		SELECT * FROM location
-		WHERE 
-		google_place_id = ?
+	SELECT id, city, state, country, full_location, google_place_id, coalesce(latitude, 0), coalesce(longitude, 0) 
+	FROM location  		
+	WHERE 
+	google_place_id = ?
 	`
 	res := ls.DB.QueryRow(query, locationID)
 
