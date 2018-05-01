@@ -22,7 +22,7 @@ func NewSpotifyController() *SpotifyController {
 	}
 }
 
-func (sc *SpotifyController) AuthorizationRequest() {
+func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http.Request) {
 
 	req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
 

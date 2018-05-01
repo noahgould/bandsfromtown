@@ -21,13 +21,13 @@ func main() {
 	artistStore := dal.NewArtistStore(db)
 	locationStore := dal.NewLocationStore(db)
 	artistController := api.NewArtistController(artistStore, locationStore)
-	//spotifyController := api.NewSpotifyController()
+	spotifyController := api.NewSpotifyController()
 
 	r.HandleFunc("/artist/{artist}", artistController.LookupArtist).Methods("GET", "OPTIONS")
 	r.HandleFunc("/artist", artistController.Index)
 	r.PathPrefix("/frontend/").Handler(http.StripPrefix("/frontend/", http.FileServer(http.Dir("frontend"))))
 	r.Handle("/", http.RedirectHandler("/frontend/artistLookup.html", 301))
-	//r.HandleFunc("/spotifyLogin", spotifyController.AuthorizationRequest)
+	r.HandleFunc("/spotifyLogin", spotifyController.AuthorizationRequest)
 	r.Handle("/spotify", http.RedirectHandler("/frontend/spotifyLogin.html", 301))
 
 	port := os.Getenv("PORT")
