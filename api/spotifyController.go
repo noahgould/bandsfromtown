@@ -1,9 +1,13 @@
 package api
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -11,6 +15,14 @@ type SpotifyController struct {
 	clientID     string
 	clientSecret string
 	redirectURI  string
+}
+
+type spotifyTokenResponse struct {
+	accessToken    string
+	tokenType      string
+	scope          string
+	expirationTime int
+	refreshToken   string
 }
 
 func NewSpotifyController() *SpotifyController {
@@ -42,11 +54,62 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	}
 
 	response, err := spotifyClient.Do(req)
-	log.Println(req.RequestURI)
-	log.Println(req.URL)
-	log.Println(response.Status)
 
+	if response.StatusCode != 200 {
+		w.Write([]byte("Response error."))
+	}
 	if err != nil {
 		log.Println("SpotifyAuthRequest %s", err.Error())
+	}
+}
+
+func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *http.Request) {
+
+	authCode := r.URL.Query()["code"][0]
+
+	form := url.Values{}
+
+	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(form.Encode()))
+
+	form.Add("grant_type", "authorization_code")
+	form.Add("code", authCode)
+	form.Add("redirect_uri", sc.redirectURI)
+	form.Add("client_id", sc.clientID)
+	form.Add("client_secret", sc.clientSecret)
+	req.PostForm = form
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	spotifyClient := &http.Client{
+		Timeout: time.Second * 5,
+	}
+
+	response, err := spotifyClient.Do(req)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	body, readErr := ioutil.ReadAll(response.Body)
+	if readErr != nil {
+		log.Println(readErr)
+	}
+
+	tokenResult := spotifyTokenResponse{}
+
+	err = json.Unmarshal(body, &tokenResult)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	getAllUserArtists(tokenResult.accessToken)
+}
+
+func getAllUserArtists(userToken string) {
+	spotifyClient := &http.Client{
+		Timeout: time.Second * 5,
 	}
 }
