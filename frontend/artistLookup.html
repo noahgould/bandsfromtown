@@ -89,7 +89,7 @@
             document.getElementById("full-location").innerHTML = response[0].location.location_string
             document.getElementById("updateLocation").value = response[0].ID
             
-            if(typeof map !== undefined) {
+            if(typeof map !== "undefined") {
                 map.removeLayer(marker);
                 marker = new L.marker([response[0].location.latitude, response[0].location.longitude]).addTo(map);
 
