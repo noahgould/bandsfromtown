@@ -92,6 +92,7 @@
             
             if(typeof map !== "undefined") {
                 map.removeLayer(marker);
+                map.panTo([response[0].location.latitude, response[0].location.longitude])
                 marker = new L.marker([response[0].location.latitude, response[0].location.longitude]).addTo(map);
 
             } else {
