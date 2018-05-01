@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log"
 	"strings"
 
@@ -68,4 +69,28 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) *dal.L
 	}
 
 	return &normalizedLocation
+}
+
+func (gmc *GoogleMapsController) GetCoordinates(location dal.Location) (*dal.Location, error) {
+
+	if location.GooglePlaceID == "" || location.GooglePlaceID == "-1" {
+		return nil, errors.New("Location does not have a valid place id.")
+	}
+
+	place := &maps.GeocodingRequest{
+		PlaceID: location.GooglePlaceID,
+	}
+
+	placeResult, err := gmc.mapsClient.Geocode(context.Background(), place)
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	location.Latitude = placeResult[0].Geometry.Location.Lat
+	location.Longitude = placeResult[0].Geometry.Location.Lng
+
+	return location, nil
+
 }

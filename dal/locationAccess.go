@@ -12,14 +12,14 @@ import (
 
 //Location of an artist or band.
 type Location struct {
-	ID            int    `json:"id"`
-	City          string `json:"city"`
-	State         string `json:"state"`
-	Country       string `json:"country"`
-	FullLocation  string `json:"location_string"`
-	GooglePlaceID string `json:"google_place_id"`
-	Latitude      int    `json:"latitude"`
-	Longitude     int    `json:"longitude"`
+	ID            int     `json:"id"`
+	City          string  `json:"city"`
+	State         string  `json:"state"`
+	Country       string  `json:"country"`
+	FullLocation  string  `json:"location_string"`
+	GooglePlaceID string  `json:"google_place_id"`
+	Latitude      float64 `json:"latitude"`
+	Longitude     float64 `json:"longitude"`
 }
 
 //LocationStore database access.
