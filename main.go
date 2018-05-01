@@ -24,7 +24,7 @@ func main() {
 
 	r.HandleFunc("/artist/{artist}", artistController.LookupArtist).Methods("GET", "OPTIONS")
 	r.HandleFunc("/artist", artistController.Index)
-	r.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("frontend"))))
+	r.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("frontend/artistLookup.html"))))
 
 	port := os.Getenv("PORT")
 	if port == "" {
