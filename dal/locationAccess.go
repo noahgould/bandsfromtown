@@ -18,6 +18,8 @@ type Location struct {
 	Country       string `json:"country"`
 	FullLocation  string `json:"location_string"`
 	GooglePlaceID string `json:"google_place_id"`
+	Latitude      int    `json:"latitude"`
+	Longitude     int    `json:"longitude"`
 }
 
 //LocationStore database access.
@@ -33,9 +35,9 @@ func NewLocationStore(db *sql.DB) LocationStore {
 func (ls *LocationStore) AddLocation(location Location) (locationID int, err error) {
 	query := `
 	INSERT location
-	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?
+	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?
 	`
-	res, err := ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID)
+	res, err := ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude)
 
 	if err != nil {
 		log.Fatal(err)
@@ -45,6 +47,23 @@ func (ls *LocationStore) AddLocation(location Location) (locationID int, err err
 		log.Fatal(err)
 	}
 	location.ID = int(id)
+
+	return location.ID, nil
+}
+
+func (ls *LocationStore) UpdateLocation(location Location) (locationID int, err error) {
+	query := `
+	UPDATE location
+	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?
+	WHERE id = ?
+	`
+
+	_, err = ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude)
+
+	if err != nil {
+		log.Print(err)
+		return location.ID, err
+	}
 
 	return location.ID, nil
 }
