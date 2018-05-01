@@ -69,19 +69,6 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 
 			artistLocation = *ac.checkForExistingLocation(artistLocation)
 
-			// if artistLocation.Latitude == 0 {
-
-			// 	artistLocationPtr, err := gMC.GetCoordinates(artistLocation)
-
-			// 	if err != nil {
-			// 		log.Println(err)
-			// 	} else {
-			// 		artistLocation = *artistLocationPtr
-			// 		ac.locationStore.UpdateLocation(artistLocation)
-
-			// 	}
-			// }
-
 			newArtist := dal.Artist{
 				Name:     artistName,
 				Location: artistLocation,
@@ -92,6 +79,19 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 		} else {
 			for i, artist := range artists {
 				artists[i].Location, err = ac.locationStore.GetLocationByID(artist.Location.ID)
+
+				if artist.Location.Latitude == 0 && artist.Location.Latitude == 0 {
+					gMC := NewGoogleMapsController()
+					artistLocationPtr, err := gMC.GetCoordinates(artists[i].Location)
+
+					if err != nil {
+						log.Println(err)
+					} else {
+						artists[i].Location = *artistLocationPtr
+						ac.locationStore.UpdateLocation(artists[i].Location)
+					}
+				}
+
 				if err != nil {
 					log.Println(err)
 				}
@@ -153,7 +153,6 @@ func (ac *ArtistController) checkForExistingLocation(locationToCheck dal.Locatio
 			} else {
 				locationToCheck = *artistLocationPtr
 				ac.locationStore.UpdateLocation(locationToCheck)
-
 			}
 
 			locationToCheck.ID, err = ac.locationStore.AddLocation(locationToCheck)
