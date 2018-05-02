@@ -29,6 +29,7 @@ type LocationStore struct {
 
 //NewLocationStore returns a new connection to an Location store
 func NewLocationStore(db *sql.DB) LocationStore {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	return LocationStore{DB: db}
 }
 

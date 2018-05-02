@@ -26,6 +26,7 @@ type ArtistStore struct {
 
 //NewArtistStore returns a new connection to an Artist store
 func NewArtistStore(db *sql.DB) ArtistStore {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	return ArtistStore{DB: db}
 }
 

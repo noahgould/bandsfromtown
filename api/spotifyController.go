@@ -81,6 +81,8 @@ type savedAlbum struct {
 
 func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.LocationStore) *SpotifyController {
 
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	return &SpotifyController{
 		clientID:      os.Getenv("SPOTIFY_CLIENT_ID"),
 		clientSecret:  os.Getenv("SPOTIFY_CLIENT_SECRET"),
@@ -88,6 +90,7 @@ func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.L
 		artistStore:   newArtistStore,
 		locationStore: newLocationStore,
 	}
+
 }
 
 func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http.Request) {
