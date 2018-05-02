@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -162,8 +161,15 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 		log.Println(err)
 	}
 
-	urlWithToken := fmt.Sprintf("bandsfromtown.heroku.com/spotify/%s", tokenResult.accessToken)
-	http.RedirectHandler(urlWithToken, 301)
+	//urlWithToken := fmt.Sprintf("bandsfromtown.heroku.com/spotify/%s", tokenResult.accessToken)
+
+	log.Println(tokenResult.accessToken)
+	usersArtists := sc.getAllUserArtists(tokenResult.accessToken)
+
+	if err := json.NewEncoder(w).Encode(usersArtists); err != nil {
+		log.Println(err)
+	}
+
 }
 
 func (sc *SpotifyController) MapUserArtists(w http.ResponseWriter, r *http.Request) {
