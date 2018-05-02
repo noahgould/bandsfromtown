@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -141,26 +140,19 @@ func (ac *ArtistController) UpdateArtistLocation(w http.ResponseWriter, r *http.
 }
 
 func (ac *ArtistController) checkForExistingLocation(locationToCheck dal.Location) *dal.Location {
-	locationAlreadyStored, err := ac.locationStore.GetLocationByGoogleID(locationToCheck.GooglePlaceID)
+	alreadyStored, location := ac.locationStore.CheckForExistingLocation(locationToCheck)
 
-	if err != nil {
-		if err == sql.ErrNoRows {
-			gMC := NewGoogleMapsController()
-			artistLocationPtr, err := gMC.GetCoordinates(locationToCheck)
-
-			if err != nil {
-				log.Println(err)
-			} else {
-				locationToCheck = *artistLocationPtr
-				ac.locationStore.UpdateLocation(locationToCheck)
-			}
-
-			locationToCheck.ID, err = ac.locationStore.AddLocation(locationToCheck)
+	if !alreadyStored {
+		gMC := NewGoogleMapsController()
+		artistLocationPtr, err := gMC.GetCoordinates(locationToCheck)
+		if err != nil {
+			log.Println(err)
 		} else {
-			log.Fatal(err)
+			locationToCheck = *artistLocationPtr
+			ac.locationStore.AddLocation(locationToCheck)
 		}
 	} else {
-		locationToCheck = locationAlreadyStored
+		locationToCheck = location
 	}
 
 	return &locationToCheck

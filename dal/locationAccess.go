@@ -128,3 +128,18 @@ func (ls *LocationStore) GetArtistsByLocationID(locationID int) (artists []Artis
 
 	return artists, nil
 }
+
+func (ls *LocationStore) CheckForExistingLocation(locationToCheck Location) (bool, Location) {
+	existingLocation, err := ls.GetLocationByGoogleID(locationToCheck.GooglePlaceID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, locationToCheck
+		} else {
+			log.Fatal(err)
+			return false, locationToCheck
+		}
+	} else {
+		return true, existingLocation
+	}
+}
