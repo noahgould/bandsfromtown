@@ -112,9 +112,9 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 		Timeout: time.Second * 5,
 	}
 
-	response, err := spotifyClient.Do(req)
-
 	log.Println("REQUEST: %s", q.Encode())
+
+	response, err := spotifyClient.Do(req)
 
 	if response.StatusCode != 200 {
 		w.Write([]byte("Response error."))
