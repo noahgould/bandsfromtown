@@ -25,6 +25,52 @@ type spotifyTokenResponse struct {
 	refreshToken   string
 }
 
+type spotifyAlbum struct {
+	AlbumType            string                `json:"album_type"`
+	Artists              []spotifySimpleArtist `json:"artists"`
+	AvailableMarkets     []string              `json:"available_markets"`
+	Copyrights           []string              `json:"copyrights"`
+	ExternalIds          []string              `json:"external_ids"`
+	ExternalUrls         []string              `json:"external_urls"`
+	Genres               []string              `json:"genres"`
+	Href                 string                `json:"href"`
+	ID                   string                `json:"id"`
+	Images               []string              `json:"images"`
+	Label                string                `json:"label"`
+	Name                 string                `json:"name"`
+	Popularity           int                   `json:"popularity"`
+	ReleaseDate          string                `json:"release_date"`
+	ReleaseDatePrecision string                `json:"release_date_precision"`
+	Restrictions         []string              `json:"restrictions"`
+	Tracks               []string              `json:"tracks"`
+	ObjectType           string                `json:"type"`
+	URI                  string                `json:"uri"`
+}
+
+type spotifySimpleArtist struct {
+	ExternalUrls []string `json:"external_urls"`
+	Href         string   `json:"href"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	ObjectType   string   `json:"type"`
+	URI          string   `json:"uri"`
+}
+
+type spotifyPage struct {
+	Href     string       `json:"href"`
+	Items    []savedAlbum `json:"items"`
+	Limit    int          `json:"limit"`
+	Next     string       `json:"next"`
+	Offset   int          `json:"offset"`
+	Previous string       `json:"previous"`
+	Total    int          `json:"total"`
+}
+
+type savedAlbum struct {
+	AddedAt string       `json:"added_at"`
+	Album   spotifyAlbum `json:"album"`
+}
+
 func NewSpotifyController() *SpotifyController {
 
 	return &SpotifyController{
@@ -111,5 +157,25 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 func getAllUserArtists(userToken string) {
 	spotifyClient := &http.Client{
 		Timeout: time.Second * 5,
+	}
+
+	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me/albums", nil)
+
+	req.Header.Add("Authorization", userToken)
+
+	q := req.URL.Query()
+	q.Add("limit", "50")
+	q.Add("response_type", "code")
+
+	req.URL.RawQuery = q.Encode()
+
+	response, err := spotifyClient.Do(req)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	if response.StatusCode == 200 {
+
 	}
 }
