@@ -101,6 +101,9 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 		log.Println("SpotifyAuthRequest %s", err.Error())
 	}
 
+	log.Print(sc.clientID)
+	log.Print(sc.clientSecret)
+
 	q := req.URL.Query()
 	q.Add("client_id", sc.clientID)
 	q.Add("response_type", "code")
