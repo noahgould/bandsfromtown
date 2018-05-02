@@ -15,7 +15,7 @@ type Artist struct {
 	Name         string `db:"name" json:"name"`
 	Location     ` db:"hometown" json:"location"`
 	Genre        string `db:"genre" json:"genre"`
-	SpotifyID    int    `db:"spotify_id" json:"spotify_id"`
+	SpotifyID    string `db:"spotify_id" json:"spotify_id"`
 	WikipediaURL string `db:"wikipedia_url" json:"wikipedia_url"`
 }
 

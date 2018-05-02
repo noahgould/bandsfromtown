@@ -7,8 +7,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/noahgould/bandsfromtown/dal"
 )
 
 type SpotifyController struct {
@@ -155,6 +158,23 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 }
 
 func getAllUserArtists(userToken string) {
+
+	resultPage := makeArtistRequest(userToken, 0)
+	artistList := []dal.Artist{}
+
+	if resultPage.Total > 50 {
+		for numAlbums := 0; numAlbums <= resultPage.Total; numAlbums += 50 {
+			artistList = append(artistList, processArtists(resultPage)...)
+			resultPage = makeArtistRequest(userToken, numAlbums)
+		}
+	} else {
+		artistList = processArtists(resultPage)
+	}
+
+}
+
+func makeArtistRequest(userToken string, offset int) spotifyPage {
+
 	spotifyClient := &http.Client{
 		Timeout: time.Second * 5,
 	}
@@ -166,6 +186,7 @@ func getAllUserArtists(userToken string) {
 	q := req.URL.Query()
 	q.Add("limit", "50")
 	q.Add("response_type", "code")
+	q.Add("offset", strconv.Itoa(offset))
 
 	req.URL.RawQuery = q.Encode()
 
@@ -175,7 +196,36 @@ func getAllUserArtists(userToken string) {
 		log.Println(err)
 	}
 
-	if response.StatusCode == 200 {
+	firstPage := spotifyPage{}
 
+	if response.StatusCode == 200 {
+		body, readErr := ioutil.ReadAll(response.Body)
+		if readErr != nil {
+			log.Println(readErr)
+		}
+
+		jsonErr := json.Unmarshal(body, &firstPage)
+
+		if jsonErr != nil {
+			log.Println(jsonErr)
+		}
 	}
+	return firstPage
+}
+
+func processArtists(page spotifyPage) []dal.Artist {
+	artistList := []dal.Artist{}
+
+	for _, album := range page.Items {
+		for _, artist := range album.Album.Artists {
+			newArtist := &dal.Artist{
+				Name:      artist.Name,
+				SpotifyID: artist.ID,
+			}
+			artistList = append(artistList, *newArtist)
+		}
+	}
+
+	return artistList
+
 }
