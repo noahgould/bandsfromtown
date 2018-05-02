@@ -21,7 +21,7 @@ func main() {
 	artistStore := dal.NewArtistStore(db)
 	locationStore := dal.NewLocationStore(db)
 	artistController := api.NewArtistController(artistStore, locationStore)
-	spotifyController := api.NewSpotifyController()
+	spotifyController := api.NewSpotifyController(artistStore, locationStore)
 
 	r.HandleFunc("/artist/{artist}", artistController.LookupArtist).Methods("GET", "OPTIONS")
 	r.HandleFunc("/artist", artistController.Index)

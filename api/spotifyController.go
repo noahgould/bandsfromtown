@@ -15,9 +15,11 @@ import (
 )
 
 type SpotifyController struct {
-	clientID     string
-	clientSecret string
-	redirectURI  string
+	clientID      string
+	clientSecret  string
+	redirectURI   string
+	artistStore   dal.ArtistStore
+	locationStore dal.LocationStore
 }
 
 type spotifyTokenResponse struct {
@@ -74,12 +76,14 @@ type savedAlbum struct {
 	Album   spotifyAlbum `json:"album"`
 }
 
-func NewSpotifyController() *SpotifyController {
+func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.LocationStore) *SpotifyController {
 
 	return &SpotifyController{
-		clientID:     os.Getenv("SPOTIFY_CLIENT_ID"),
-		clientSecret: os.Getenv("SPOTIFY_CLIENT_SECRET"),
-		redirectURI:  os.Getenv("SPOTIFY_REDIRECT_URL"),
+		clientID:      os.Getenv("SPOTIFY_CLIENT_ID"),
+		clientSecret:  os.Getenv("SPOTIFY_CLIENT_SECRET"),
+		redirectURI:   os.Getenv("SPOTIFY_REDIRECT_URL"),
+		artistStore:   newArtistStore,
+		locationStore: newLocationStore,
 	}
 }
 
@@ -171,6 +175,13 @@ func getAllUserArtists(userToken string) {
 		artistList = processArtists(resultPage)
 	}
 
+}
+
+func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) {
+
+	for i, artist := range artists {
+
+	}
 }
 
 func makeArtistRequest(userToken string, offset int) spotifyPage {
