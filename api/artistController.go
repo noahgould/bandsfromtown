@@ -79,7 +79,7 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			for i, artist := range artists {
 				artists[i].Location, err = ac.locationStore.GetLocationByID(artist.Location.ID)
 
-				if artist.Location.Latitude == 0 && artist.Location.Latitude == 0 {
+				if artist.Location.Latitude == 0 && artist.Location.Longitude == 0 {
 					gMC := NewGoogleMapsController()
 					artistLocationPtr, err := gMC.GetCoordinates(artists[i].Location)
 

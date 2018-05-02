@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -158,10 +159,14 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 		log.Println(err)
 	}
 
-	getAllUserArtists(tokenResult.accessToken)
+	usersArtists := sc.getAllUserArtists(tokenResult.accessToken)
+
+	if err := json.NewEncoder(w).Encode(usersArtists); err != nil {
+		log.Println(err)
+	}
 }
 
-func getAllUserArtists(userToken string) {
+func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 
 	resultPage := makeArtistRequest(userToken, 0)
 	artistList := []dal.Artist{}
@@ -175,13 +180,49 @@ func getAllUserArtists(userToken string) {
 		artistList = processArtists(resultPage)
 	}
 
+	artistList = sc.getArtistLocations(artistList)
+
+	return artistList
+
 }
 
-func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) {
+func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Artist {
 
+	var err error
 	for i, artist := range artists {
-
+		artists[i], err = sc.artistStore.GetArtistBySpotifyID(artist.SpotifyID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				possibleArtists, err := sc.artistStore.GetArtistsByName(artist.Name)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						artist.Location = LookupArtistLocation(artist.Name)
+						gmc := NewGoogleMapsController()
+						artist.Location = *gmc.NormalizeLocation(artist.Location)
+						var exists bool
+						exists, artist.Location = sc.locationStore.CheckForExistingLocation(artist.Location)
+						if !exists {
+							locationPointer, err := gmc.GetCoordinates(artist.Location)
+							if err != nil {
+								log.Println(err)
+							}
+							artist.Location = *locationPointer
+							sc.locationStore.AddLocation(artist.Location)
+							sc.artistStore.AddArtist(artist)
+						} else {
+							sc.artistStore.AddArtist(artist)
+						}
+						artists[i] = artist
+					}
+				}
+				artists[i] = possibleArtists[0]
+			} else {
+				log.Println(err)
+			}
+		}
 	}
+
+	return artists
 }
 
 func makeArtistRequest(userToken string, offset int) spotifyPage {
