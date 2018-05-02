@@ -126,13 +126,14 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 
 func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *http.Request) {
 
-	authCode := r.URL.Query().Get("code")
-	errorCode := r.URL.Query().Get("error")
+	authCode := mux.Vars(r)["code"]
+	errorCode := mux.Vars(r)["error"]
 
 	if errorCode != "" {
 		log.Println(errorCode)
 		w.Write([]byte("Error authenticating."))
 	} else {
+		log.Println(errorCode)
 		log.Println(authCode)
 	}
 
