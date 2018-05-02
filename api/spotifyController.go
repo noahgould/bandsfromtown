@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
 
 	"github.com/noahgould/bandsfromtown/dal"
 )
@@ -159,7 +162,13 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 		log.Println(err)
 	}
 
-	usersArtists := sc.getAllUserArtists(tokenResult.accessToken)
+	urlWithToken := fmt.Sprintf("bandsfromtown.heroku.com/spotify/%s", tokenResult.accessToken)
+	http.RedirectHandler(urlWithToken, 301)
+}
+
+func (sc *SpotifyController) MapUserArtists(w http.ResponseWriter, r *http.Request) {
+
+	usersArtists := sc.getAllUserArtists(mux.Vars(r)["spotifyID"])
 
 	if err := json.NewEncoder(w).Encode(usersArtists); err != nil {
 		log.Println(err)
