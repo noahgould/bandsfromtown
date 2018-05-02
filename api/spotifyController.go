@@ -124,7 +124,8 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 
 func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *http.Request) {
 
-	authCode := r.URL.Query()["code"][0]
+	log.Println(r.URL.Query())
+	authCode := r.URL.Query()["code"]
 
 	form := url.Values{}
 
