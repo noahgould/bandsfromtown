@@ -114,6 +114,8 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 
 	response, err := spotifyClient.Do(req)
 
+	log.Println("REQUEST: %s", q.Encode())
+
 	if response.StatusCode != 200 {
 		w.Write([]byte("Response error."))
 	}
@@ -124,7 +126,7 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 
 func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *http.Request) {
 
-	log.Println(r.URL.Query())
+	log.Println("CALLBACK URL PARAMS: %s", r.URL.Query())
 	authCode := r.URL.Query()["code"]
 
 	form := url.Values{}
@@ -132,7 +134,7 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(form.Encode()))
 
 	form.Add("grant_type", "authorization_code")
-	form.Add("code", authCode)
+	form.Add("code", authCode[0])
 	form.Add("redirect_uri", sc.redirectURI)
 	form.Add("client_id", sc.clientID)
 	form.Add("client_secret", sc.clientSecret)
