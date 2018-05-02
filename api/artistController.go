@@ -149,7 +149,10 @@ func (ac *ArtistController) checkForExistingLocation(locationToCheck dal.Locatio
 			log.Println(err)
 		} else {
 			locationToCheck = *artistLocationPtr
-			ac.locationStore.AddLocation(locationToCheck)
+			locationToCheck.ID, err = ac.locationStore.AddLocation(locationToCheck)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	} else {
 		locationToCheck = location
