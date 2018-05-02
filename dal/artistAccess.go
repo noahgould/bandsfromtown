@@ -67,6 +67,24 @@ func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 	return artist, err
 }
 
+//GetArtistBySpotifyID returns the artist with a matching spotify id.
+func (as *ArtistStore) GetArtistBySpotifyID(spotifyID string) (artist Artist, err error) {
+	query := `
+		SELECT * FROM artist
+		WHERE 
+		spotify_id = ?`
+
+	res := as.DB.QueryRow(query, spotifyID)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = res.Scan(&artist.ID, &artist.Name, &artist.Location, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
+
+	return artist, err
+}
+
 //GetArtistsByName returns the artist with a matching name.
 func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, err error) {
 	query := `
