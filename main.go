@@ -28,7 +28,7 @@ func main() {
 	r.PathPrefix("/frontend/").Handler(http.StripPrefix("/frontend/", http.FileServer(http.Dir("frontend"))))
 	r.Handle("/", http.RedirectHandler("/frontend/artistLookup.html", 301))
 	r.HandleFunc("/spotify/auth", spotifyController.AuthorizationRequest)
-	r.HandleFunc("/spotify/login", spotifyController.AuthorizationCallback)
+	r.HandleFunc("/spotify/login/", spotifyController.AuthorizationCallback)
 	r.HandleFunc("/spotify/{spotifyID}", spotifyController.MapUserArtists)
 
 	port := os.Getenv("PORT")

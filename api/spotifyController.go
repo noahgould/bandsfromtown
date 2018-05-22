@@ -98,7 +98,8 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
 
 	if err != nil {
-		log.Println("SpotifyAuthRequest %s", err.Error())
+		log.Println("SpotifyAuthRequest")
+		log.Println(err)
 	}
 
 	log.Print(sc.clientID)
@@ -123,8 +124,10 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 		w.Write([]byte("Response error."))
 	}
 	if err != nil {
-		log.Println("SpotifyAuthRequest %s", err.Error())
+		log.Printf("SpotifyAuthRequest %s \n", err.Error())
 	}
+
+	w.Write([]byte("No error on authrequest."))
 }
 
 func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *http.Request) {
