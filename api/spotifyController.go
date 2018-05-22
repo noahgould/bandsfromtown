@@ -95,37 +95,45 @@ func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.L
 
 func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http.Request) {
 
-	req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
+	log.Println("HEY WE IN HERE.")
+	// req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
 
-	if err != nil {
-		log.Println("SpotifyAuthRequest")
-		log.Println(err)
-	}
+	// if err != nil {
+	// 	log.Println("SpotifyAuthRequest")
+	// 	log.Println(err)
+	// }
 
 	log.Print(sc.clientID)
 	log.Print(sc.clientSecret)
 
-	q := req.URL.Query()
+	u, err := url.Parse("https://accounts.spotify.com/authorize")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	q := u.Query()
+
+	// q := req.URL.Query()
 	q.Add("client_id", sc.clientID)
 	q.Add("response_type", "code")
 	q.Add("redirect_uri", sc.redirectURI)
 	q.Add("scope", "user-library-read playlist-read-collaborative playlist-read-private")
 
-	req.URL.RawQuery = q.Encode()
-	spotifyClient := &http.Client{
-		Timeout: time.Second * 5,
-	}
+	// req.URL.RawQuery = q.Encode()
+	// spotifyClient := &http.Client{
+	// 	Timeout: time.Second * 5,
+	// }
 
 	log.Println(q.Encode())
 
-	response, err := spotifyClient.Do(req)
+	// response, err := spotifyClient.Do(req)
 
-	if response.StatusCode != 200 {
-		w.Write([]byte("Response error."))
-	}
-	if err != nil {
-		log.Printf("SpotifyAuthRequest %s \n", err.Error())
-	}
+	// if response.StatusCode != 200 {
+	// 	w.Write([]byte("Response error."))
+	// }
+	// if err != nil {
+	// 	log.Printf("SpotifyAuthRequest %s \n", err.Error())
+	// }
 
 	http.Redirect(w, r, q.Encode(), http.StatusPermanentRedirect)
 
