@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -95,7 +96,7 @@ func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.L
 
 func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http.Request) {
 
-	log.Println("HEY WE IN HERE.")
+	fmt.Println("HEY WE IN HERE.")
 	// req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
 
 	// if err != nil {
@@ -103,8 +104,8 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	// 	log.Println(err)
 	// }
 
-	log.Print(sc.clientID)
-	log.Print(sc.clientSecret)
+	fmt.Print(sc.clientID)
+	fmt.Print(sc.clientSecret)
 
 	u, err := url.Parse("https://accounts.spotify.com/authorize")
 	if err != nil {
@@ -124,7 +125,7 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	// 	Timeout: time.Second * 5,
 	// }
 
-	log.Println(q.Encode())
+	fmt.Println(q.Encode())
 
 	// response, err := spotifyClient.Do(req)
 
