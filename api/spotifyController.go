@@ -127,7 +127,8 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 		log.Printf("SpotifyAuthRequest %s \n", err.Error())
 	}
 
-	w.Write([]byte("No error on authrequest."))
+	http.Redirect(w, r, req.URL.RawQuery, http.StatusPermanentRedirect)
+
 }
 
 func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *http.Request) {
