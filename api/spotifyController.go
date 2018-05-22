@@ -112,6 +112,8 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 		log.Fatal(err)
 	}
 
+	u.Host = "accounts.spotify.com/authorize"
+	u.Scheme = "https"
 	q := u.Query()
 
 	// q := req.URL.Query()
