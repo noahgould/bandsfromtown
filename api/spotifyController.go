@@ -107,27 +107,27 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	fmt.Print(sc.clientID)
 	fmt.Print(sc.clientSecret)
 
-	u, err := url.Parse("https://accounts.spotify.com/authorize")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// u, err := url.Parse("https://accounts.spotify.com/authorize")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	u.Host = "accounts.spotify.com/authorize"
-	u.Scheme = "https"
-	q := u.Query()
+	// u.Host = "accounts.spotify.com/authorize"
+	// u.Scheme = "https"
+	// q := u.Query()
 
 	// q := req.URL.Query()
-	q.Add("client_id", sc.clientID)
-	q.Add("response_type", "code")
-	q.Add("redirect_uri", sc.redirectURI)
-	q.Add("scope", "user-library-read playlist-read-collaborative playlist-read-private")
+	// q.Add("client_id", sc.clientID)
+	// q.Add("response_type", "code")
+	// q.Add("redirect_uri", sc.redirectURI)
+	// q.Add("scope", "user-library-read playlist-read-collaborative playlist-read-private")
 
 	// req.URL.RawQuery = q.Encode()
 	// spotifyClient := &http.Client{
 	// 	Timeout: time.Second * 5,
 	// }
 
-	fmt.Println(q.Encode())
+	// fmt.Println(q.Encode())
 
 	// response, err := spotifyClient.Do(req)
 
@@ -138,7 +138,9 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	// 	log.Printf("SpotifyAuthRequest %s \n", err.Error())
 	// }
 
-	http.Redirect(w, r, q.Encode(), http.StatusPermanentRedirect)
+	spotifyUrl := "https://accounts.spotify.com/authorize?client_id=6416bd9495224d4a9d28292487b58a83&redirect_uri=https:/bandsfromtown.heroku.com/spotify/login&response_type=code&scope=user-library-read+playlist-read-collaborative+playlist-read-private"
+
+	http.Redirect(w, r, spotifyUrl, http.StatusPermanentRedirect)
 
 }
 
