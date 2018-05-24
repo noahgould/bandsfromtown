@@ -80,23 +80,29 @@ type savedAlbum struct {
 	Album   spotifyAlbum `json:"album"`
 }
 
+const redirectURI string = "http://localhost:8080/spotify/login/"
+
 func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.LocationStore) *SpotifyController {
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	clientID, clientEnvExist := os.LookupEnv("SPOTIFY_ID")
+	clientSecret, clientSecretEnvExist := os.LookupEnv("SPOTIFY_SECRET")
+	if !clientEnvExist || !clientSecretEnvExist {
+		log.Fatal("spotify client id or secret not stored in environment variables.")
+	}
+	log.Println("creating spotify controller.")
 	return &SpotifyController{
-		clientID:      os.Getenv("SPOTIFY_CLIENT_ID"),
-		clientSecret:  os.Getenv("SPOTIFY_CLIENT_SECRET"),
-		redirectURI:   os.Getenv("SPOTIFY_REDIRECT_URL"),
+		clientID:      clientID,
+		clientSecret:  clientSecret,
+		redirectURI:   redirectURI,
 		artistStore:   newArtistStore,
 		locationStore: newLocationStore,
 	}
-
 }
 
 func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Println("HEY WE IN HERE.")
 	// req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
 
 	// if err != nil {
@@ -104,24 +110,24 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	// 	log.Println(err)
 	// }
 
+	log.Println("in the auth request method.")
 	fmt.Print(sc.clientID)
 	fmt.Print(sc.clientSecret)
 
-	// u, err := url.Parse("https://accounts.spotify.com/authorize")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	u, err := url.Parse("https://accounts.spotify.com/authorize")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// u.Host = "accounts.spotify.com/authorize"
-	// u.Scheme = "https"
-	// q := u.Query()
+	q := u.Query()
+	q.Add("client_id", sc.clientID)
+	q.Add("response_type", "code")
+	q.Add("redirect_uri", sc.redirectURI)
+	q.Add("scope", "user-library-read playlist-read-collaborative playlist-read-private")
 
-	// q := req.URL.Query()
-	// q.Add("client_id", sc.clientID)
-	// q.Add("response_type", "code")
-	// q.Add("redirect_uri", sc.redirectURI)
-	// q.Add("scope", "user-library-read playlist-read-collaborative playlist-read-private")
+	u.RawQuery = q.Encode()
 
+	log.Println("Redirect String: %s", u.String())
 	// req.URL.RawQuery = q.Encode()
 	// spotifyClient := &http.Client{
 	// 	Timeout: time.Second * 5,
@@ -138,18 +144,17 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	// 	log.Printf("SpotifyAuthRequest %s \n", err.Error())
 	// }
 
-	spotifyUrl := "https://accounts.spotify.com/authorize?client_id=6416bd9495224d4a9d28292487b58a83&redirect_uri=https:/bandsfromtown.heroku.com/spotify/login&response_type=code&scope=user-library-read+playlist-read-collaborative+playlist-read-private"
-
-	http.Redirect(w, r, spotifyUrl, http.StatusPermanentRedirect)
+	// spotifyURL := "https://accounts.spotify.com/authorize?client_id=6416bd9495224d4a9d28292487b58a83&redirect_uri=http://localhost:8080/spotify/login&response_type=code&scope=user-library-read+playlist-read-collaborative+playlist-read-private"
+	http.Redirect(w, r, u.String(), http.StatusPermanentRedirect)
 
 }
 
 func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *http.Request) {
 
-	authCode := mux.Vars(r)["code"]
-	errorCode := mux.Vars(r)["error"]
+	authCode := r.URL.Query()["code"]
+	errorCode := r.URL.Query()["error"]
 
-	if errorCode != "" {
+	if len(errorCode) > 0 {
 		log.Println(errorCode)
 		w.Write([]byte("Error authenticating."))
 	} else {
@@ -157,12 +162,16 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 		log.Println(authCode)
 	}
 
+	if len(authCode) == 0 {
+		log.Println("More than 1 authcode.")
+	}
+
 	form := url.Values{}
 
 	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(form.Encode()))
 
 	form.Add("grant_type", "authorization_code")
-	form.Add("code", authCode)
+	form.Add("code", authCode[0])
 	form.Add("redirect_uri", sc.redirectURI)
 	form.Add("client_id", sc.clientID)
 	form.Add("client_secret", sc.clientSecret)
