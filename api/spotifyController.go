@@ -2,8 +2,8 @@ package api
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -27,11 +27,11 @@ type SpotifyController struct {
 }
 
 type spotifyTokenResponse struct {
-	accessToken    string
-	tokenType      string
-	scope          string
-	expirationTime int
-	refreshToken   string
+	accessToken    string `json:"access_token"`
+	tokenType      string `json:"token_type"`
+	scope          string `json:"scope"`
+	expirationTime int    `json:"expires_in"`
+	refreshToken   string `json:"refresh_token"`
 }
 
 type spotifyAlbum struct {
@@ -91,7 +91,7 @@ func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.L
 	if !clientEnvExist || !clientSecretEnvExist {
 		log.Fatal("spotify client id or secret not stored in environment variables.")
 	}
-	log.Println("creating spotify controller.")
+
 	return &SpotifyController{
 		clientID:      clientID,
 		clientSecret:  clientSecret,
@@ -102,17 +102,6 @@ func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.L
 }
 
 func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http.Request) {
-
-	// req, err := http.NewRequest("GET", "https://accounts.spotify.com/authorize", nil)
-
-	// if err != nil {
-	// 	log.Println("SpotifyAuthRequest")
-	// 	log.Println(err)
-	// }
-
-	log.Println("in the auth request method.")
-	fmt.Print(sc.clientID)
-	fmt.Print(sc.clientSecret)
 
 	u, err := url.Parse("https://accounts.spotify.com/authorize")
 	if err != nil {
@@ -127,24 +116,6 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 
 	u.RawQuery = q.Encode()
 
-	log.Println("Redirect String: %s", u.String())
-	// req.URL.RawQuery = q.Encode()
-	// spotifyClient := &http.Client{
-	// 	Timeout: time.Second * 5,
-	// }
-
-	// fmt.Println(q.Encode())
-
-	// response, err := spotifyClient.Do(req)
-
-	// if response.StatusCode != 200 {
-	// 	w.Write([]byte("Response error."))
-	// }
-	// if err != nil {
-	// 	log.Printf("SpotifyAuthRequest %s \n", err.Error())
-	// }
-
-	// spotifyURL := "https://accounts.spotify.com/authorize?client_id=6416bd9495224d4a9d28292487b58a83&redirect_uri=http://localhost:8080/spotify/login&response_type=code&scope=user-library-read+playlist-read-collaborative+playlist-read-private"
 	http.Redirect(w, r, u.String(), http.StatusPermanentRedirect)
 
 }
@@ -157,9 +128,6 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 	if len(errorCode) > 0 {
 		log.Println(errorCode)
 		w.Write([]byte("Error authenticating."))
-	} else {
-		log.Println(errorCode)
-		log.Println(authCode)
 	}
 
 	if len(authCode) == 0 {
@@ -167,19 +135,21 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 	}
 
 	form := url.Values{}
-
-	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(form.Encode()))
-
 	form.Add("grant_type", "authorization_code")
 	form.Add("code", authCode[0])
 	form.Add("redirect_uri", sc.redirectURI)
-	form.Add("client_id", sc.clientID)
-	form.Add("client_secret", sc.clientSecret)
-	req.PostForm = form
+
+	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(form.Encode()))
 
 	if err != nil {
 		log.Println(err)
 	}
+
+	headerString := base64.StdEncoding.EncodeToString([]byte(sc.clientID + ":" + sc.clientSecret))
+	headerString = strings.Join([]string{"Basic", headerString}, " ")
+	req.Header.Add("Authorization", headerString)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Content-Length", strconv.Itoa(len(form.Encode())))
 
 	spotifyClient := &http.Client{
 		Timeout: time.Second * 5,
@@ -204,14 +174,14 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 		log.Println(err)
 	}
 
-	//urlWithToken := fmt.Sprintf("bandsfromtown.heroku.com/spotify/%s", tokenResult.accessToken)
-
 	log.Println(tokenResult.accessToken)
 	usersArtists := sc.getAllUserArtists(tokenResult.accessToken)
 
 	if err := json.NewEncoder(w).Encode(usersArtists); err != nil {
 		log.Println(err)
 	}
+
+	w.Write(body)
 
 }
 
