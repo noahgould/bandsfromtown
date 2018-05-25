@@ -101,6 +101,7 @@ func LookupArtistLocation(artist string) dal.Location {
 	originGood := false
 	birthPlaceGood := false
 	for _, p := range pageInfo.Query.Pages {
+		log.Println(p)
 		if strings.Contains(p.Revisions[0].Content, "origin") {
 			infoBoxItems = strings.Split(p.Revisions[0].Content, "origin")
 			infoBoxItems = strings.Split(infoBoxItems[1], "=")
