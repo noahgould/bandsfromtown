@@ -105,6 +105,7 @@ func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, er
 		err = rows.Scan(&artist.ID, &artist.Name, &artist.Location.ID, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
 		if err != nil {
 			log.Println(err)
+			return nil, err
 		}
 
 		artists = append(artists, artist)

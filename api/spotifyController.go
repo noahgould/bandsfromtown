@@ -27,42 +27,58 @@ type SpotifyController struct {
 }
 
 type spotifyTokenResponse struct {
-	accessToken    string `json:"access_token"`
-	tokenType      string `json:"token_type"`
-	scope          string `json:"scope"`
-	expirationTime int    `json:"expires_in"`
-	refreshToken   string `json:"refresh_token"`
+	AccessToken    string `json:"access_token"`
+	TokenType      string `json:"token_type"`
+	Scope          string `json:"scope"`
+	ExpirationTime int    `json:"expires_in"`
+	RefreshToken   string `json:"refresh_token"`
 }
 
 type spotifyAlbum struct {
 	AlbumType            string                `json:"album_type"`
 	Artists              []spotifySimpleArtist `json:"artists"`
 	AvailableMarkets     []string              `json:"available_markets"`
-	Copyrights           []string              `json:"copyrights"`
-	ExternalIds          []string              `json:"external_ids"`
-	ExternalUrls         []string              `json:"external_urls"`
+	Copyrights           []copyright           `json:"copyrights"`
+	ExternalIds          []string              `json:"-"`
+	ExternalUrls         []externalURL         `json:"-"`
 	Genres               []string              `json:"genres"`
 	Href                 string                `json:"href"`
 	ID                   string                `json:"id"`
-	Images               []string              `json:"images"`
+	Images               []image               `json:"images"`
 	Label                string                `json:"label"`
 	Name                 string                `json:"name"`
 	Popularity           int                   `json:"popularity"`
 	ReleaseDate          string                `json:"release_date"`
 	ReleaseDatePrecision string                `json:"release_date_precision"`
-	Restrictions         []string              `json:"restrictions"`
-	Tracks               []string              `json:"tracks"`
+	Restrictions         []string              `json:"-"`
+	Tracks               []string              `json:"-"`
 	ObjectType           string                `json:"type"`
 	URI                  string                `json:"uri"`
 }
 
 type spotifySimpleArtist struct {
-	ExternalUrls []string `json:"external_urls"`
-	Href         string   `json:"href"`
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	ObjectType   string   `json:"type"`
-	URI          string   `json:"uri"`
+	ExternalUrls []externalURL `json:"-"`
+	Href         string        `json:"href"`
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	ObjectType   string        `json:"type"`
+	URI          string        `json:"uri"`
+}
+
+type image struct {
+	Height int    `json:"height"`
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+}
+
+type externalURL struct {
+	Type  string
+	Value string
+}
+
+type copyright struct {
+	Text string `json:"text"`
+	Type string `json:"type"`
 }
 
 type spotifyPage struct {
@@ -174,14 +190,11 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 		log.Println(err)
 	}
 
-	log.Println(tokenResult.accessToken)
-	usersArtists := sc.getAllUserArtists(tokenResult.accessToken)
+	usersArtists := sc.getAllUserArtists(tokenResult.AccessToken)
 
 	if err := json.NewEncoder(w).Encode(usersArtists); err != nil {
 		log.Println(err)
 	}
-
-	w.Write(body)
 
 }
 
@@ -196,16 +209,14 @@ func (sc *SpotifyController) MapUserArtists(w http.ResponseWriter, r *http.Reque
 
 func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 
-	resultPage := makeArtistRequest(userToken, 0)
+	resultPage := makeAlbumRequest(userToken, 0)
 	artistList := []dal.Artist{}
+	log.Println(resultPage.Total)
 
-	if resultPage.Total > 50 {
-		for numAlbums := 0; numAlbums <= resultPage.Total; numAlbums += 50 {
-			artistList = append(artistList, processArtists(resultPage)...)
-			resultPage = makeArtistRequest(userToken, numAlbums)
-		}
-	} else {
-		artistList = processArtists(resultPage)
+	artistList = append(artistList, processArtists(resultPage, artistList)...)
+	for numAlbums := 50; numAlbums <= resultPage.Total; numAlbums += 50 {
+		resultPage = makeAlbumRequest(userToken, numAlbums)
+		artistList = append(artistList, processArtists(resultPage, artistList)...)
 	}
 
 	artistList = sc.getArtistLocations(artistList)
@@ -215,17 +226,19 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 }
 
 func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Artist {
+	log.Println("getArtistLocations")
+	gmc := NewGoogleMapsController()
 
 	var err error
 	for i, artist := range artists {
-		artists[i], err = sc.artistStore.GetArtistBySpotifyID(artist.SpotifyID)
+		var existingArtist dal.Artist
+		existingArtist, err = sc.artistStore.GetArtistBySpotifyID(artist.SpotifyID)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				possibleArtists, err := sc.artistStore.GetArtistsByName(artist.Name)
-				if err != nil {
+				if possibleArtists == nil {
 					if err == sql.ErrNoRows {
 						artist.Location = LookupArtistLocation(artist.Name)
-						gmc := NewGoogleMapsController()
 						artist.Location = *gmc.NormalizeLocation(artist.Location)
 						var exists bool
 						exists, artist.Location = sc.locationStore.CheckForExistingLocation(artist.Location)
@@ -242,18 +255,24 @@ func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Arti
 						}
 						artists[i] = artist
 					}
+				} else {
+					log.Printf("possible artists: %d \n", len(possibleArtists))
+					artists[i] = possibleArtists[0]
 				}
-				artists[i] = possibleArtists[0]
 			} else {
 				log.Println(err)
 			}
+		} else {
+			artists[i] = existingArtist
 		}
 	}
 
 	return artists
 }
 
-func makeArtistRequest(userToken string, offset int) spotifyPage {
+func makeAlbumRequest(userToken string, offset int) spotifyPage {
+	log.Printf("makeAlbumRequest: offset: %d ", offset)
+	log.Println(userToken)
 
 	spotifyClient := &http.Client{
 		Timeout: time.Second * 5,
@@ -261,15 +280,15 @@ func makeArtistRequest(userToken string, offset int) spotifyPage {
 
 	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me/albums", nil)
 
-	req.Header.Add("Authorization", userToken)
+	req.Header.Add("Authorization", "Bearer "+userToken)
 
 	q := req.URL.Query()
 	q.Add("limit", "50")
-	q.Add("response_type", "code")
 	q.Add("offset", strconv.Itoa(offset))
 
 	req.URL.RawQuery = q.Encode()
 
+	log.Printf("albumRequest URL: %s \n", req.URL.String())
 	response, err := spotifyClient.Do(req)
 
 	if err != nil {
@@ -290,19 +309,23 @@ func makeArtistRequest(userToken string, offset int) spotifyPage {
 			log.Println(jsonErr)
 		}
 	}
+
 	return firstPage
 }
 
-func processArtists(page spotifyPage) []dal.Artist {
-	artistList := []dal.Artist{}
+func processArtists(page spotifyPage, artistList []dal.Artist) []dal.Artist {
+	artistMap := make(map[string]bool)
 
 	for _, album := range page.Items {
 		for _, artist := range album.Album.Artists {
-			newArtist := &dal.Artist{
-				Name:      artist.Name,
-				SpotifyID: artist.ID,
+			if _, ok := artistMap[artist.ID]; !ok {
+				artistMap[artist.ID] = true
+				newArtist := &dal.Artist{
+					Name:      artist.Name,
+					SpotifyID: artist.ID,
+				}
+				artistList = append(artistList, *newArtist)
 			}
-			artistList = append(artistList, *newArtist)
 		}
 	}
 
