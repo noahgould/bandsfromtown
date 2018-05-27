@@ -63,7 +63,7 @@ func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 		log.Fatal(err)
 	}
 
-	err = res.Scan(&artist.ID, &artist.Name, &artist.Location, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
+	err = res.Scan(&artist.ID, &artist.Name, &artist.Location.ID, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
 
 	return artist, err
 }
@@ -81,7 +81,7 @@ func (as *ArtistStore) GetArtistBySpotifyID(spotifyID string) (artist Artist, er
 		log.Fatal(err)
 	}
 
-	err = res.Scan(&artist.ID, &artist.Name, &artist.Location, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
+	err = res.Scan(&artist.ID, &artist.Name, &artist.Location.ID, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
 
 	return artist, err
 }
