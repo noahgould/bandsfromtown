@@ -80,6 +80,48 @@ type spotifySimplePlaylist struct {
 	URI           string        `json:"uri"`
 }
 
+type spotifyPlaylistTrack struct {
+	AddedAt   string       `json:"added_at"`
+	AddedBy   spotifyUser  `json:"added_by"`
+	LocalFile bool         `json:"is_local"`
+	Track     spotifyTrack `json:"track"`
+}
+
+type spotifyTrack struct {
+	Album            spotifySimpleAlbum    `json:"album"`
+	Artists          []spotifySimpleArtist `json:"artists"`
+	AvailableMarkets []string              `json:"available_markets"`
+	DiscNumber       int                   `json:"disc_number"`
+	DurationMS       int                   `json:"duration_ms"`
+	Explicit         bool                  `json:"explicit"`
+	ExternalID       []string              `json:"-"`
+	ExternalUrls     []externalURL         `json:"-"`
+	Href             string                `json:"href"`
+	ID               string                `json:"id"`
+	Name             string                `json:"name"`
+	Popularity       int                   `json:"popularity"`
+	PreviewURL       string                `json:"preview_url"`
+	TrackNumber      int                   `json:"track_number"`
+	ObjectType       string                `json:"type"`
+	URI              string                `json:"uri"`
+}
+
+type spotifySimpleAlbum struct {
+	AlbumType            string                `json:"album_type"`
+	Artists              []spotifySimpleArtist `json:"artists"`
+	AvailableMarkets     []string              `json:"available_markets"`
+	ExternalUrls         []externalURL         `json:"-"`
+	Href                 string                `json:"href"`
+	ID                   string                `json:"id"`
+	Images               []image               `json:"images"`
+	Name                 string                `json:"name"`
+	ReleaseDate          string                `json:"release_date"`
+	ReleaseDatePrecision string                `json:"release_date_precision"`
+	Restrictions         []string              `json:"-"`
+	ObjectType           string                `json:"type"`
+	URI                  string                `json:"uri"`
+}
+
 type spotifyUser struct {
 	DisplayName  string        `json:"display_name"`
 	ExternalUrls []externalURL `json:"-"`
@@ -90,6 +132,11 @@ type spotifyUser struct {
 	ObjectType   string        `json:"type"`
 	URI          string        `json:"uri"`
 }
+
+// type spotifyExternalID {
+// 	Key string `j`
+// 	Value string `json:"-"`
+// }
 
 type spotifyTracks struct {
 	TracksURI      string `json:"href"`
