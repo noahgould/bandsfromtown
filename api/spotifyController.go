@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -178,6 +179,11 @@ type spotifyPlaylistPage struct {
 	Playlists []spotifySimplePlaylist `json:"items"`
 }
 
+type spotifyTrackPage struct {
+	spotifyBasePage
+	PlaylistTracks []spotifyPlaylistTrack `json:"items"`
+}
+
 type savedAlbum struct {
 	AddedAt string       `json:"added_at"`
 	Album   spotifyAlbum `json:"album"`
@@ -296,21 +302,95 @@ func (sc *SpotifyController) MapUserArtists(w http.ResponseWriter, r *http.Reque
 
 func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 
+	//start requesting user albums
 	resultPage := makeAlbumRequest(userToken, 0)
 	artistList := []dal.Artist{}
-
-	artistList = append(artistList, getArtistsFromAlbums(resultPage, artistList)...)
+	artistMap := make(map[string]bool)
+	artistList = append(artistList, getArtistsFromAlbums(resultPage, artistList, artistMap)...)
+	//go through each page of user albums, getting artists from albums as we go along.
 	for numAlbums := 50; numAlbums <= resultPage.Total; numAlbums += 50 {
 		resultPage = makeAlbumRequest(userToken, numAlbums)
-		artistList = getArtistsFromAlbums(resultPage, artistList)
+		artistList = getArtistsFromAlbums(resultPage, artistList, artistMap)
 	}
 
+	//start requesting playlists
 	playlistResultPage := makePlaylistRequest(userToken, 0)
+	playlists := playlistResultPage.Playlists
+	//get all the playlists.
+	for numPlaylists := 50; numPlaylists <= playlistResultPage.Total; numPlaylists += 50 {
+		playlists = append(playlists, makePlaylistRequest(userToken, numPlaylists).Playlists...)
+	}
+
+	for _, playlist := range playlists {
+		trackOffset := 0
+		trackPage := makePlaylistTrackRequest(userToken, trackOffset, playlist)
+		for numTracks := 0; numTracks <= trackPage.Total; numTracks += 100 {
+			for _, track := range trackPage.PlaylistTracks {
+				artistList = append(artistList, spotifyArtistToArtist(artistMap, track.Track.Artists...)...)
+			}
+		}
+	}
 
 	artistList = sc.getArtistLocations(artistList)
-
 	return artistList
+}
 
+func spotifyArtistToArtist(artistMap map[string]bool, artist ...spotifySimpleArtist) []dal.Artist {
+	newArtists := []dal.Artist{}
+	for _, a := range artist {
+		if _, ok := artistMap[a.ID]; !ok {
+			artistMap[a.ID] = true
+			newArtist := dal.Artist{
+				Name:      a.Name,
+				SpotifyID: a.ID,
+			}
+			newArtists = append(newArtists, newArtist)
+		}
+	}
+	return newArtists
+}
+
+// can make this more efficient by limiting results. https://beta.developer.spotify.com/documentation/web-api/reference/playlists/get-playlists-tracks/
+func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimplePlaylist) spotifyTrackPage {
+
+	spotifyClient := &http.Client{
+		Timeout: time.Second * 5,
+	}
+
+	requestURL := fmt.Sprintf("https://api.spotify.com/v1/users/%s/playlists/%s/tracks", playlist.Owner.ID, playlist.ID)
+
+	req, err := http.NewRequest("GET", requestURL, nil)
+
+	req.Header.Add("Authorization", "Bearer "+userToken)
+
+	q := req.URL.Query()
+	q.Add("limit", "100")
+	q.Add("offset", strconv.Itoa(offset))
+
+	req.URL.RawQuery = q.Encode()
+
+	response, err := spotifyClient.Do(req)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	firstPage := spotifyTrackPage{}
+
+	if response.StatusCode == 200 {
+		body, readErr := ioutil.ReadAll(response.Body)
+		if readErr != nil {
+			log.Println(readErr)
+		}
+
+		jsonErr := json.Unmarshal(body, &firstPage)
+
+		if jsonErr != nil {
+			log.Println(jsonErr)
+		}
+	}
+
+	return firstPage
 }
 
 func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Artist {
@@ -444,8 +524,7 @@ func makePlaylistRequest(userToken string, offset int) spotifyPlaylistPage {
 	return firstPage
 }
 
-func getArtistsFromAlbums(page spotifyAlbumPage, artistList []dal.Artist) []dal.Artist {
-	artistMap := make(map[string]bool)
+func getArtistsFromAlbums(page spotifyAlbumPage, artistList []dal.Artist, artistMap map[string]bool) []dal.Artist {
 
 	for _, album := range page.Albums {
 		for _, artist := range album.Artists {
