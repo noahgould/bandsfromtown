@@ -159,14 +159,23 @@ type copyright struct {
 	Type string `json:"type"`
 }
 
-type spotifyPage struct {
-	Href     string       `json:"href"`
-	Items    []savedAlbum `json:"items"`
-	Limit    int          `json:"limit"`
-	Next     string       `json:"next"`
-	Offset   int          `json:"offset"`
-	Previous string       `json:"previous"`
-	Total    int          `json:"total"`
+type spotifyBasePage struct {
+	Href     string `json:"href"`
+	Limit    int    `json:"limit"`
+	Next     string `json:"next"`
+	Offset   int    `json:"offset"`
+	Previous string `json:"previous"`
+	Total    int    `json:"total"`
+}
+
+type spotifyAlbumPage struct {
+	spotifyBasePage
+	Albums []spotifySimpleAlbum `json:"items"`
+}
+
+type spotifyPlaylistPage struct {
+	spotifyBasePage
+	Playlists []spotifySimplePlaylist `json:"items"`
 }
 
 type savedAlbum struct {
@@ -296,7 +305,7 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 		artistList = getArtistsFromAlbums(resultPage, artistList)
 	}
 
-	resultPage = makePlaylistRequest(userToken, 0)
+	playlistResultPage := makePlaylistRequest(userToken, 0)
 
 	artistList = sc.getArtistLocations(artistList)
 
@@ -356,7 +365,7 @@ func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Arti
 	return artists
 }
 
-func makeAlbumRequest(userToken string, offset int) spotifyPage {
+func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
 
 	spotifyClient := &http.Client{
 		Timeout: time.Second * 5,
@@ -378,7 +387,7 @@ func makeAlbumRequest(userToken string, offset int) spotifyPage {
 		log.Println(err)
 	}
 
-	firstPage := spotifyPage{}
+	firstPage := spotifyAlbumPage{}
 
 	if response.StatusCode == 200 {
 		body, readErr := ioutil.ReadAll(response.Body)
@@ -396,7 +405,7 @@ func makeAlbumRequest(userToken string, offset int) spotifyPage {
 	return firstPage
 }
 
-func makePlaylistRequest(userToken string, offset int) spotifyPage {
+func makePlaylistRequest(userToken string, offset int) spotifyPlaylistPage {
 	spotifyClient := &http.Client{
 		Timeout: time.Second * 5,
 	}
@@ -417,7 +426,7 @@ func makePlaylistRequest(userToken string, offset int) spotifyPage {
 		log.Println(err)
 	}
 
-	firstPage := spotifyPage{}
+	firstPage := spotifyPlaylistPage{}
 
 	if response.StatusCode == 200 {
 		body, readErr := ioutil.ReadAll(response.Body)
@@ -435,11 +444,11 @@ func makePlaylistRequest(userToken string, offset int) spotifyPage {
 	return firstPage
 }
 
-func getArtistsFromAlbums(page spotifyPage, artistList []dal.Artist) []dal.Artist {
+func getArtistsFromAlbums(page spotifyAlbumPage, artistList []dal.Artist) []dal.Artist {
 	artistMap := make(map[string]bool)
 
-	for _, album := range page.Items {
-		for _, artist := range album.Album.Artists {
+	for _, album := range page.Albums {
+		for _, artist := range album.Artists {
 			if _, ok := artistMap[artist.ID]; !ok {
 				artistMap[artist.ID] = true
 				newArtist := &dal.Artist{
