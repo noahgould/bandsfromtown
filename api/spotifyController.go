@@ -323,8 +323,14 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 
 	for _, playlist := range playlists {
 		trackOffset := 0
+
 		trackPage := makePlaylistTrackRequest(userToken, trackOffset, playlist)
-		for numTracks := 0; numTracks <= trackPage.Total; numTracks += 100 {
+		for _, track := range trackPage.PlaylistTracks {
+			artistList = append(artistList, spotifyArtistToArtist(artistMap, track.Track.Artists...)...)
+		}
+
+		for trackOffset := 100; trackOffset <= trackPage.Total; trackOffset += 100 {
+			trackPage = makePlaylistTrackRequest(userToken, trackOffset, playlist)
 			for _, track := range trackPage.PlaylistTracks {
 				artistList = append(artistList, spotifyArtistToArtist(artistMap, track.Track.Artists...)...)
 			}
