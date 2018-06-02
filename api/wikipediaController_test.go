@@ -11,8 +11,11 @@ func TestLookupArtistLocation(t *testing.T) {
 		artistName string
 		location   dal.Location
 	}{
+		{"Porches", dal.Location{
+			City: "Pleasantville", State: "New York", Country: "United States",
+		}},
 		{"Kali Uchis", dal.Location{
-			City: "Pereira", State: "unknown", Country: "Colombia",
+			City: "Alexandria", State: "unknown", Country: "Virginia",
 		}},
 		{"The Shins", dal.Location{
 			City: "Albuquerque", State: "New Mexico", Country: "United States",
@@ -24,10 +27,10 @@ func TestLookupArtistLocation(t *testing.T) {
 			City: "Southwark", State: "London", Country: "England",
 		}},
 		{"Ghostface Killah", dal.Location{
-			City: "New York City", State: "New York", Country: "U.S.",
+			City: "Staten Island", State: "New York", Country: "U.S.",
 		}},
 		{"Jeff Rosenstock", dal.Location{
-			City: "New York City", State: "New York", Country: "U.S.",
+			City: "Long Island", State: "unknown", Country: "United States",
 		}},
 	}
 
