@@ -18,12 +18,14 @@ func TestGetArtistLocations(t *testing.T) {
 	locationStore := dal.NewLocationStore(db)
 
 	inputArtists := []dal.Artist{
-		{Name: "Kali Uchis"},
-		{Name: "Foster the People"},
+		{Name: "Kali Uchis", SpotifyID: "1U1el3k54VvEUzo3ybLPlM"},
+		{Name: "Foster the People", SpotifyID: "7gP3bB2nilZXLfPHJhMdvc"},
+		{Name: "Glass Animals", SpotifyID: "4yvcSjfu4PC0CYQyLy4wSq"},
 	}
 	outputArtists := []dal.Artist{
-		{Name: "Kali Uchis", Location: dal.Location{City: "Alexandria", State: "Virginia", Country: "USA", FullLocation: "Alexandria, Virginia, USA.", GooglePlaceID: "ChIJ8aukkz5NtokRLAHB24Ym9dc"}},
-		{Name: "Foster the People"},
+		{Name: "Kali Uchis", Location: dal.Location{City: "Alexandria", State: "Virginia", Country: "USA", FullLocation: "Alexandria, Virginia, USA", GooglePlaceID: "ChIJ8aukkz5NtokRLAHB24Ym9dc"}, SpotifyID: "1U1el3k54VvEUzo3ybLPlM"},
+		{Name: "Foster the People", Location: dal.Location{City: "Los Angeles", State: "California", Country: "U.S", FullLocation: "Los Angeles, California, U.S.", GooglePlaceID: "ChIJE9on3F3HwoAR9AhGJW_fL-I"}, SpotifyID: "7gP3bB2nilZXLfPHJhMdvc"},
+		{Name: "Glass Animals", Location: dal.Location{City: "Oxford", State: "England", Country: "UK", FullLocation: "Oxford, England, UK", GooglePlaceID: "ChIJrx_ErYAzcUgRAnRUy6jbIMg"}, SpotifyID: "4yvcSjfu4PC0CYQyLy4wSq"},
 	}
 
 	spotifyController := NewSpotifyController(artistStore, locationStore)

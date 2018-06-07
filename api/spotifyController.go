@@ -400,7 +400,7 @@ func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimp
 }
 
 func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Artist {
-	log.Println("getArtistLocations")
+	log.Printf("getArtistLocations for %d artists.\n", len(artists))
 	gmc := NewGoogleMapsController()
 
 	var err error
@@ -410,26 +410,41 @@ func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Arti
 		if err != nil {
 			if err == sql.ErrNoRows {
 				possibleArtists, err := sc.artistStore.GetArtistsByName(artist.Name)
-				if possibleArtists == nil {
-					if err == sql.ErrNoRows {
-						artist.Location = LookupArtistLocation(artist.Name)
-						artist.Location = *gmc.NormalizeLocation(artist.Location)
+				if len(possibleArtists) == 0 {
+					if err == nil {
+						artists[i].Location = LookupArtistLocation(artist.Name)
+						log.Printf("wikiLocation: %v", artists[i].FullLocation)
+						artists[i].Location = *gmc.NormalizeLocation(artists[i].Location)
 						var exists bool
-						exists, artist.Location = sc.locationStore.CheckForExistingLocation(artist.Location)
+						exists, artists[i].Location = sc.locationStore.CheckForExistingLocation(artists[i].Location)
 						if !exists {
-							locationPointer, err := gmc.GetCoordinates(artist.Location)
+							log.Println("no existing location.")
+							if artists[i].Location.ID != 0 {
+								locationPointer, err := gmc.GetCoordinates(artists[i].Location)
+								if err != nil {
+									log.Println(err)
+								}
+								artists[i].Location = *locationPointer
+							}
+							artists[i].Location.ID, err = sc.locationStore.AddLocation(artists[i].Location)
 							if err != nil {
 								log.Println(err)
 							}
-							artist.Location = *locationPointer
-							sc.locationStore.AddLocation(artist.Location)
-							sc.artistStore.AddArtist(artist)
+
+							artists[i].ID, err = sc.artistStore.AddArtist(artists[i])
+							if err != nil {
+								log.Println(err)
+							}
+
 						} else {
-							sc.artistStore.AddArtist(artist)
+							log.Println("existing location.")
+							sc.artistStore.AddArtist(artists[i])
 						}
-						artists[i] = artist
+					} else {
+						log.Println(err)
 					}
 				} else {
+					log.Println("artist w/ no spotify id")
 					artists[i] = possibleArtists[0]
 					artists[i].Location, err = sc.locationStore.GetLocationByID(possibleArtists[0].Location.ID)
 					if err != nil {
@@ -440,6 +455,7 @@ func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Arti
 				log.Println(err)
 			}
 		} else {
+			log.Println("artist w/ spotify id")
 			artists[i] = existingArtist
 			artists[i].Location, err = sc.locationStore.GetLocationByID(existingArtist.Location.ID)
 			if err != nil {
