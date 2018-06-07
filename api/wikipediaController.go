@@ -41,7 +41,8 @@ type wikiSearchResult struct {
 
 func wikipediaFormat(artistName string) string {
 	artistName = strings.Replace(artistName, " ", "%20", -1)
-	return strings.Replace(artistName, "_", "%20", -1)
+	artistName = strings.Replace(artistName, "&", "%26", -1)
+	return artistName
 }
 
 func (w *wikiSearchResult) UnmarshalJSON(buf []byte) error {
@@ -71,7 +72,7 @@ func locationStringToStruct(location string) dal.Location {
 
 	var state, country, city string
 	if len(locationPieces) >= 3 {
-		city = locationPieces[0]
+		city = locationPieces[len(locationPieces)-3]
 		state = locationPieces[len(locationPieces)-2]
 		country = locationPieces[len(locationPieces)-1]
 	} else {
@@ -90,6 +91,8 @@ func locationStringToStruct(location string) dal.Location {
 
 //LookupArtistLocation queries wikipedia for an artists location and returns it.
 func LookupArtistLocation(artist string) dal.Location {
+
+	log.Println(artist)
 
 	url := "http://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=" + wikipediaFormat(artist) + "&rvsection=0"
 	wikiClient := http.Client{
@@ -125,7 +128,7 @@ func LookupArtistLocation(artist string) dal.Location {
 	for _, p := range pageInfo.Query.Pages {
 		if len(p.Revisions) > 0 {
 			if strings.Contains(p.Revisions[0].Content, "Infobox musical artist") || strings.Contains(p.Revisions[0].Content, "Infobox person") {
-				if strings.Contains(p.Revisions[0].Content, "origin") {
+				if strings.Contains(p.Revisions[0].Content, "origin ") {
 					infoBoxItems = strings.Split(p.Revisions[0].Content, "origin")
 					infoBoxItems = strings.Split(infoBoxItems[1], "=")
 					if strings.Count(infoBoxItems[1], ",") > 0 {
@@ -227,9 +230,12 @@ func searchForPage(artist string) string {
 	}
 
 	for _, title := range searchResult.PageTitles {
-		if strings.Contains(title, "band") || strings.Contains(title, "musical artist") || strings.Contains(title, "musician)") {
+		if strings.Contains(title, "band") || strings.Contains(title, "musical artist") || strings.Contains(title, "musician") || strings.Contains(title, "singer") {
 			return title
 		}
+	}
+	if len(searchResult.PageTitles) > 0 {
+		artist = searchResult.PageTitles[0]
 	}
 
 	return artist
