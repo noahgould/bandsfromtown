@@ -64,9 +64,15 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) *dal.L
 		}
 
 		if len(placeResult.Predictions[0].Terms) < 3 {
-			normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
-			normalizedLocation.State = ""
-			normalizedLocation.Country = placeResult.Predictions[0].Terms[1].Value
+			if len(placeResult.Predictions[0].Terms) > 1 {
+				normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
+				normalizedLocation.State = ""
+				normalizedLocation.Country = placeResult.Predictions[0].Terms[1].Value
+			} else {
+				normalizedLocation.City = ""
+				normalizedLocation.State = ""
+				normalizedLocation.Country = placeResult.Predictions[0].Terms[0].Value
+			}
 		} else {
 			normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
 			normalizedLocation.State = placeResult.Predictions[0].Terms[1].Value
