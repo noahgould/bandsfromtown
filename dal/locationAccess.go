@@ -136,11 +136,11 @@ func (ls *LocationStore) CheckForExistingLocation(locationToCheck Location) (boo
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, locationToCheck
-		} else {
-			log.Fatal(err)
-			return false, locationToCheck
 		}
-	} else {
-		return true, existingLocation
+
+		log.Fatal(err)
+		return false, locationToCheck
+
 	}
+	return true, existingLocation
 }

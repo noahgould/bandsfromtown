@@ -77,10 +77,6 @@ func (as *ArtistStore) GetArtistBySpotifyID(spotifyID string) (artist Artist, er
 
 	res := as.DB.QueryRow(query, spotifyID)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	err = res.Scan(&artist.ID, &artist.Name, &artist.Location.ID, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
 
 	return artist, err
@@ -90,8 +86,7 @@ func (as *ArtistStore) GetArtistBySpotifyID(spotifyID string) (artist Artist, er
 func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, err error) {
 	query := `
 		SELECT * FROM artist
-		WHERE 
-		name = ?`
+		WHERE name = ?`
 
 	rows, err := as.DB.Query(query, artistName)
 
@@ -99,6 +94,7 @@ func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, er
 		log.Println(err)
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var artist Artist
@@ -109,6 +105,11 @@ func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, er
 		}
 
 		artists = append(artists, artist)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	return artists, err

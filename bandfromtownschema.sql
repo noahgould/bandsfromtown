@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS `heroku_45a7f4f644be63c`.`location` (
   `country` VARCHAR(150) NOT NULL,
   `full_location` VARCHAR(256) NULL DEFAULT NULL,
   `google_place_id` VARCHAR(256) NULL DEFAULT NULL,
+  `longitude` DOUBLE NULL,
+  `latitude` DOUBLE NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 37
@@ -29,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `heroku_45a7f4f644be63c`.`artist` (
   `name` VARCHAR(150) NOT NULL,
   `hometown` INT(10) UNSIGNED NOT NULL,
   `genre` VARCHAR(150) NULL DEFAULT NULL,
-  `spotify_id` INT(10) UNSIGNED NULL DEFAULT NULL,
+  `spotify_id` VARCHAR(256) NULL DEFAULT NULL,
   `wikipedia_url` VARCHAR(150) NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   INDEX `fk_location_id` (`hometown` ASC),
