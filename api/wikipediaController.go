@@ -92,8 +92,6 @@ func locationStringToStruct(location string) dal.Location {
 //LookupArtistLocation queries wikipedia for an artists location and returns it.
 func LookupArtistLocation(artist string) dal.Location {
 
-	log.Println(artist)
-
 	url := "http://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=" + wikipediaFormat(artist) + "&rvsection=0"
 	wikiClient := http.Client{
 		Timeout: time.Second * 5,
@@ -202,7 +200,6 @@ func getLocationFromResult(infoBox []string) dal.Location {
 
 	location = strings.Join(locationBits, ",")
 
-	log.Println(location)
 	return locationStringToStruct(location)
 
 }
