@@ -31,6 +31,10 @@ func NewArtistStore(db *sql.DB) ArtistStore {
 }
 
 func (as *ArtistStore) AddArtist(artist Artist) (artistID int, err error) {
+	if artist.SpotifyID == "" {
+		artist.SpotifyID = "-1"
+	}
+
 	query := `
 	INSERT artist
 	SET name = ?, hometown = ?, genre = ?, spotify_id = ?, wikipedia_url = ?
@@ -70,6 +74,10 @@ func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 
 //GetArtistBySpotifyID returns the artist with a matching spotify id.
 func (as *ArtistStore) GetArtistBySpotifyID(spotifyID string) (artist Artist, err error) {
+	if spotifyID == "-1" {
+		return artist, sql.ErrNoRows
+	}
+
 	query := `
 		SELECT * FROM artist
 		WHERE 
