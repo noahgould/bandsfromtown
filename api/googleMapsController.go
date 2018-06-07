@@ -27,6 +27,13 @@ func NewGoogleMapsController() *GoogleMapsController {
 
 func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) *dal.Location {
 
+	if location.FullLocation == "nil, nil, nil" {
+		log.Println("wiki couldn't find location.")
+		location.FullLocation = "location could not be found"
+		location.GooglePlaceID = "-1"
+		location.ID = 0
+		return &location
+	}
 	var locationString string
 
 	if location.State == "unknown" {
@@ -44,7 +51,7 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) *dal.L
 
 	var normalizedLocation dal.Location
 	if err != nil {
-		log.Print(err)
+		log.Printf("loc string: %v. Error: %v.\n", locationString, err)
 		normalizedLocation = location
 		normalizedLocation.FullLocation = "location could not be found"
 		normalizedLocation.GooglePlaceID = "-1"
