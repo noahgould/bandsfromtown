@@ -101,27 +101,32 @@ func LookupArtistLocation(artist string) dal.Location {
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return locationStringToStruct("nil, nil, nil")
 	}
 
 	req.Header.Set("User-Agent", "bandsfromtown")
 
 	res, getErr := wikiClient.Do(req)
 	if getErr != nil {
-		log.Fatal(getErr)
+		log.Println(getErr)
+		return locationStringToStruct("nil, nil, nil")
 	}
 
 	body, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
-		log.Fatal(readErr)
+		log.Println(readErr)
+		return locationStringToStruct("nil, nil, nil")
 	}
 
 	pageInfo := wikiApiResult{}
 	jsonErr := json.Unmarshal(body, &pageInfo)
 
 	if jsonErr != nil {
-		log.Fatal(jsonErr)
+		log.Println(jsonErr)
+		return locationStringToStruct("nil, nil, nil")
 	}
+
 	var infoBoxItems []string
 	originGood := false
 	birthPlaceGood := false
@@ -185,11 +190,14 @@ func getLocationFromResult(infoBox []string) dal.Location {
 		if endOfLocation > 0 {
 			bit = strings.Trim(bit[0:endOfLocation], "")
 		}
+		bit = strings.Replace(bit, "nowrap", "", -1)
 		bit = strings.Replace(bit, "]", "", -1)
 		bit = strings.Replace(bit, "[", "", -1)
+		bit = strings.Replace(bit, "{", "", -1)
+		bit = strings.Replace(bit, "}", "", -1)
 		bit = strings.Replace(bit, "&nbsp;", " ", -1)
 		bit = strings.Replace(bit, "\n", "", -1)
-		locationBits[i] = strings.Replace(bit, "nowrap", "", -1)
+		locationBits[i] = bit
 	}
 
 	location = strings.Join(locationBits, ",")
@@ -207,19 +215,19 @@ func searchForPage(artist string) string {
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	req.Header.Set("User-Agent", "bandsfromtown")
 
 	res, getErr := wikiClient.Do(req)
 	if getErr != nil {
-		log.Fatal(getErr)
+		log.Println(getErr)
 	}
 
 	body, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
-		log.Fatal(readErr)
+		log.Println(readErr)
 	}
 	var searchResult wikiSearchResult
 
