@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -283,21 +284,30 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 		log.Println(err)
 	}
 
-	usersArtists := sc.getAllUserArtists(tokenResult.AccessToken)
-
-	if err := json.NewEncoder(w).Encode(usersArtists); err != nil {
-		log.Println(err)
-	}
+	render(w, "./frontend/spotifyResults.html", tokenResult.AccessToken)
 
 }
 
-func (sc *SpotifyController) MapUserArtists(w http.ResponseWriter, r *http.Request) {
+func render(w http.ResponseWriter, tmpl string, arg string) {
+	t, err := template.ParseFiles(tmpl)
+	if err != nil {
+		log.Print("template parsing error: ", err)
+	}
+	err = t.Execute(w, arg)
+	if err != nil {
+		log.Print("template executing error: ", err)
+	}
+}
 
-	usersArtists := sc.getAllUserArtists(mux.Vars(r)["spotifyID"])
+func (sc *SpotifyController) FindUserArtistLocations(w http.ResponseWriter, r *http.Request) {
+	accessToken := mux.Vars(r)["accessToken"]
+
+	usersArtists := sc.getAllUserArtists(accessToken)
 
 	if err := json.NewEncoder(w).Encode(usersArtists); err != nil {
 		log.Println(err)
 	}
+
 }
 
 func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {

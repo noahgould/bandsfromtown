@@ -13,7 +13,7 @@ import (
 
 func main() {
 	r := mux.NewRouter()
-	db, err := dal.StartDB(os.Getenv("CLEARDB_DATABASE_URL"))
+	db, err := dal.StartDB(os.Getenv("LOCAL_DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,6 +29,7 @@ func main() {
 	r.Handle("/", http.RedirectHandler("/frontend/artistLookup.html", 301))
 	r.HandleFunc("/spotify/auth/", spotifyController.AuthorizationRequest)
 	r.HandleFunc("/spotify/login/", spotifyController.AuthorizationCallback)
+	r.HandleFunc("/spotify/locations/{accessToken}", spotifyController.FindUserArtistLocations)
 
 	port := os.Getenv("PORT")
 	if port == "" {
