@@ -66,7 +66,7 @@
         } else {
             var locationString = city + "," + state + "," + country;
             let request = new XMLHttpRequest();
-            let url = "https://bandsfromtown.herokuapp.comartist/updateLocation"
+            let url = "http://localhost:8080/artist/updateLocation"
             request.open("POST", url);
             request.setRequestHeader("Content-type", "application/json")
             request.send("artistID=" + document.getElementById("updateLocation").value + "location=" + locationString)
@@ -77,40 +77,39 @@
     function lookupArtist() {
         var artistName = document.getElementById("artistInput").value;
         let request = new XMLHttpRequest();
-        let url = "https://bandsfromtown.herokuapp.com/artist/" + artistName;
+        let url = "http://localhost:8080/artist/" + artistName;
         request.open("GET", url);
         request.setRequestHeader("Content-type", "application/json");
         request.send();
         request.onload = function () {
-            
             var response = JSON.parse(request.responseText);
-            console.log(response); 
             var resultP = document.getElementById("results")
 
             document.getElementById("full-location").innerHTML = response[0].location.location_string
             document.getElementById("updateLocation").value = response[0].ID
             
-            if(typeof map !== "undefined") {
-                //map.removeLayer(marker);
-                map.panTo([response[0].location.latitude, response[0].location.longitude])
-                marker = new L.marker([response[0].location.latitude, response[0].location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + response[0].name +"</b><br>"+response[0].location.location_string);
+            addLocationToMap(response[0].location)
+        }
+        }
+
+    function addLocationToMap(location) {
+        if(typeof map !== "undefined") {
+                map.panTo([location.latitude, location.longitude])
+                marker = new L.marker([location.latitude, location.longitude]).addTo(map);
+                marker.bindPopup("<b>" + name +"</b><br>"+location.location_string);
             } else {
-                map = L.map('mapid').setView([response[0].location.latitude, response[0].location.longitude], 5);
+                map = L.map('mapid').setView([location.latitude, location.longitude], 5);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 }).addTo(map)
 
-                marker = L.marker([response[0].location.latitude, response[0].location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + response[0].name +"</b><br>"+response[0].location.location_string);
-
+                marker = L.marker([location.latitude, location.longitude]).addTo(map);
+                marker.bindPopup("<b>" + name +"</b><br>"+location.location_string);
             }
+    }
 
-        }
-        }
-    
 
 </script>
 
