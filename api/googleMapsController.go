@@ -25,14 +25,14 @@ func NewGoogleMapsController() *GoogleMapsController {
 	}
 }
 
-func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) *dal.Location {
+func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) (*dal.Location, error) {
 
 	if location.FullLocation == "nil, nil, nil" {
 		log.Println("wiki couldn't find location.")
 		location.FullLocation = "location could not be found"
 		location.GooglePlaceID = "-1"
 		location.ID = 0
-		return &location
+		return &location, nil
 	}
 	var locationString string
 
@@ -56,32 +56,31 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) *dal.L
 		normalizedLocation.FullLocation = "location could not be found"
 		normalizedLocation.GooglePlaceID = "-1"
 		normalizedLocation.ID = 0
-
-	} else {
-		normalizedLocation = dal.Location{
-			FullLocation:  placeResult.Predictions[0].Description,
-			GooglePlaceID: placeResult.Predictions[0].PlaceID,
-		}
-
-		if len(placeResult.Predictions[0].Terms) < 3 {
-			if len(placeResult.Predictions[0].Terms) > 1 {
-				normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
-				normalizedLocation.State = ""
-				normalizedLocation.Country = placeResult.Predictions[0].Terms[1].Value
-			} else {
-				normalizedLocation.City = ""
-				normalizedLocation.State = ""
-				normalizedLocation.Country = placeResult.Predictions[0].Terms[0].Value
-			}
-		} else {
-			normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
-			normalizedLocation.State = placeResult.Predictions[0].Terms[1].Value
-			normalizedLocation.Country = placeResult.Predictions[0].Terms[2].Value
-		}
-
+		return &normalizedLocation, err
 	}
 
-	return &normalizedLocation
+	normalizedLocation = dal.Location{
+		FullLocation:  placeResult.Predictions[0].Description,
+		GooglePlaceID: placeResult.Predictions[0].PlaceID,
+	}
+
+	if len(placeResult.Predictions[0].Terms) < 3 {
+		if len(placeResult.Predictions[0].Terms) > 1 {
+			normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
+			normalizedLocation.State = ""
+			normalizedLocation.Country = placeResult.Predictions[0].Terms[1].Value
+		} else {
+			normalizedLocation.City = ""
+			normalizedLocation.State = ""
+			normalizedLocation.Country = placeResult.Predictions[0].Terms[0].Value
+		}
+	} else {
+		normalizedLocation.City = placeResult.Predictions[0].Terms[0].Value
+		normalizedLocation.State = placeResult.Predictions[0].Terms[1].Value
+		normalizedLocation.Country = placeResult.Predictions[0].Terms[2].Value
+	}
+
+	return &normalizedLocation, nil
 }
 
 func (gmc *GoogleMapsController) GetCoordinates(location dal.Location) (*dal.Location, error) {
