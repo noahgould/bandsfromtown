@@ -172,7 +172,7 @@ type spotifyBasePage struct {
 
 type spotifyAlbumPage struct {
 	spotifyBasePage
-	Albums []spotifySimpleAlbum `json:"items"`
+	Albums []savedAlbum `json:"items"`
 }
 
 type spotifyPlaylistPage struct {
@@ -311,6 +311,7 @@ func (sc *SpotifyController) FindUserArtistLocations(w http.ResponseWriter, r *h
 }
 
 func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
+	log.Printf("AccessToken: %s \n", userToken)
 
 	//start requesting user albums
 	resultPage := makeAlbumRequest(userToken, 0)
@@ -372,11 +373,9 @@ func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimp
 	spotifyClient := &http.Client{
 		Timeout: time.Second * 5,
 	}
-
 	requestURL := fmt.Sprintf("https://api.spotify.com/v1/users/%s/playlists/%s/tracks", playlist.Owner.ID, playlist.ID)
 
 	req, err := http.NewRequest("GET", requestURL, nil)
-
 	req.Header.Add("Authorization", "Bearer "+userToken)
 
 	q := req.URL.Query()
@@ -398,7 +397,6 @@ func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimp
 		if readErr != nil {
 			log.Println(readErr)
 		}
-
 		jsonErr := json.Unmarshal(body, &firstPage)
 
 		if jsonErr != nil {
@@ -487,7 +485,7 @@ func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Arti
 func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
 
 	spotifyClient := &http.Client{
-		Timeout: time.Second * 5,
+		Timeout: time.Second * 20,
 	}
 
 	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me/albums", nil)
@@ -565,8 +563,8 @@ func makePlaylistRequest(userToken string, offset int) spotifyPlaylistPage {
 
 func getArtistsFromAlbums(page spotifyAlbumPage, artistList []dal.Artist, artistMap map[string]bool) []dal.Artist {
 
-	for _, album := range page.Albums {
-		for _, artist := range album.Artists {
+	for _, savedAlbum := range page.Albums {
+		for _, artist := range savedAlbum.Album.Artists {
 			if _, ok := artistMap[artist.ID]; !ok {
 				artistMap[artist.ID] = true
 				newArtist := &dal.Artist{
@@ -577,7 +575,7 @@ func getArtistsFromAlbums(page spotifyAlbumPage, artistList []dal.Artist, artist
 			}
 		}
 	}
-
+	log.Printf("ArtistList len: %v \n", len(artistList))
 	return artistList
 
 }
