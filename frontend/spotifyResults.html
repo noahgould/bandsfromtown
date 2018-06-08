@@ -3,7 +3,7 @@
     div {
         font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
     }
-    #mapid {height: 300px;}
+    #mapid {height: 600px;}
 </style>
 <head>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"
@@ -21,7 +21,7 @@
 
 <div id="mapid"></div>
 <div id="unknownLocations" display="none">
-    <h1>"We were unable to find a location for the following artists. Perhaps you could add it?"</h1>
+    <h1>We were unable to find a location for the following artists. Perhaps you could add it?</h1>
 </div>
 <script>
 
@@ -42,7 +42,7 @@
                 if (artist.location.google_place_id === "-1") {
                     addUnknownLocation(artist)
                 } else {
-                    addLocationToMap(artist.location)
+                    addLocationToMap(artist)
                 }
             })
         }
@@ -50,28 +50,29 @@
     }
 
 
-    function addLocationToMap(location) {
+    function addLocationToMap(artist) {
         if(typeof map !== "undefined") {
-                map.panTo([location.latitude, location.longitude])
-                marker = new L.marker([location.latitude, location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + name +"</b><br>"+location.location_string);
+                map.panTo([artist.location.latitude, artist.location.longitude])
+                marker = new L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
+                marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
             } else {
-                map = L.map('mapid').setView([location.latitude, location.longitude], 5);
+                map = L.map('mapid').setView([artist.location.latitude, artist.location.longitude], 5);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 }).addTo(map)
 
-                marker = L.marker([location.latitude, location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + name +"</b><br>"+location.location_string);
+                marker = L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
+                marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
             }
     }
 
     function addUnknownLocation(artist) {
         unknownDiv = document.getElementById("unknownLocations")
         if (unknownDiv.display == "none") { unknownDiv.display = "block"};
-        newArtist = document.createTextNode(artist.name + "<br>")
+        unknownDiv.appendChild(document.createElement("br"));
+        newArtist = document.createTextNode(artist.name)
         unknownDiv.appendChild(newArtist);
     }
 
