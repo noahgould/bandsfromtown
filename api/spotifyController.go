@@ -190,7 +190,7 @@ type savedAlbum struct {
 	Album   spotifyAlbum `json:"album"`
 }
 
-const redirectURI string = "http://localhost:8080/spotify/login/"
+const redirectURI string = "https://bandsfromtown.herokuapp.com/spotify/login/"
 
 func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.LocationStore) *SpotifyController {
 
