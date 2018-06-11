@@ -67,7 +67,7 @@
         } else {
             var locationString = city + "," + state + "," + country;
             let request = new XMLHttpRequest();
-            let url = "https://bandsfromtown.herokuapp.com/artist/updateLocation"
+            let url = prodURL + "artist/updateLocation"
             request.open("POST", url);
             request.setRequestHeader("Content-type", "application/json")
             request.send("artistID=" + document.getElementById("updateLocation").value + "location=" + locationString)
