@@ -307,11 +307,9 @@ func (sc *SpotifyController) FindUserArtistLocations(w http.ResponseWriter, r *h
 	if err := json.NewEncoder(w).Encode(usersArtists); err != nil {
 		log.Println(err)
 	}
-
 }
 
 func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
-	log.Printf("AccessToken: %s \n", userToken)
 
 	//start requesting user albums
 	resultPage := makeAlbumRequest(userToken, 0)
@@ -408,7 +406,6 @@ func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimp
 }
 
 func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Artist {
-	log.Printf("getArtistLocations for %d artists.\n", len(artists))
 	gmc := NewGoogleMapsController()
 
 	var err error
@@ -423,7 +420,6 @@ func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Arti
 					if err == nil {
 						if !stopQueryingGoogle {
 							artists[i].Location = LookupArtistLocation(artist.Name)
-							log.Printf("wikiLocation: %v", artists[i].FullLocation)
 							locationPtr, err := gmc.NormalizeLocation(artists[i].Location)
 							if err != nil {
 								if err.Error() == "maps: OVER_QUERY_LIMIT - You have exceeded your daily request quota for this API.." {
@@ -575,7 +571,6 @@ func getArtistsFromAlbums(page spotifyAlbumPage, artistList []dal.Artist, artist
 			}
 		}
 	}
-	log.Printf("ArtistList len: %v \n", len(artistList))
 	return artistList
 
 }
