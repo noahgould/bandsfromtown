@@ -41,7 +41,7 @@
         var accessToken = "{{.}}"
 
         let request = new XMLHttpRequest();
-        let url = "http://localhost:8080/spotify/locations/" + accessToken;
+        let url = "https://bandsfromtown.herokuapp.com/spotify/locations/" + accessToken;
         request.open("GET", url);
         request.setRequestHeader("Content-type", "application/json");
         request.send();

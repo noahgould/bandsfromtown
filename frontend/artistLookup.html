@@ -96,7 +96,7 @@
         var artistID = document.getElementById("artistID").value;
 
         let request = new XMLHttpRequest();
-        let url = "http://localhost:8080/" + "artist/updateLocation/" + artistID
+        let url = "https://bandsfromtown.herokuapp.com/" + "artist/updateLocation/" + artistID
         request.open("POST", url);
         request.setRequestHeader("Content-type", "application/json")
         request.send(JSON.stringify(newLocation))
@@ -114,7 +114,7 @@
     function lookupArtist() {
         var artistName = document.getElementById("artistInput").value;
         let request = new XMLHttpRequest();
-        let url = "http://localhost:8080" + "/artist/" + artistName;
+        let url = "https://bandsfromtown.herokuapp.com" + "/artist/" + artistName;
         request.open("GET", url);
         request.setRequestHeader("Content-type", "application/json");
         request.send();
