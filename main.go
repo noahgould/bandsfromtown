@@ -13,7 +13,7 @@ import (
 
 func main() {
 	r := mux.NewRouter()
-	db, err := dal.StartDB(os.Getenv("CLEARDB_DATABASE_URL"))
+	db, err := dal.StartDB(os.Getenv("LOCAL_DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,6 +24,7 @@ func main() {
 	spotifyController := api.NewSpotifyController(artistStore, locationStore)
 
 	r.HandleFunc("/artist/{artist}", artistController.LookupArtist).Methods("GET", "OPTIONS")
+	r.HandleFunc("/artist/updateLocation/{artistID}", artistController.UpdateArtistLocation).Methods("POST", "OPTIONS")
 	r.HandleFunc("/artist", artistController.Index)
 	r.PathPrefix("/frontend/").Handler(http.StripPrefix("/frontend/", http.FileServer(http.Dir("frontend"))))
 	r.Handle("/", http.RedirectHandler("/frontend/artistLookup.html", 301))

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -105,39 +106,50 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 
 }
 
+//UpdateArtistLocation Updates the location for an existing artist.
 func (ac *ArtistController) UpdateArtistLocation(w http.ResponseWriter, r *http.Request) {
-	artistId, err := strconv.Atoi(mux.Vars(r)["artistID"])
+	artistID, err := strconv.Atoi(mux.Vars(r)["artistID"])
+
 	if err != nil {
 		log.Printf("artistController line 84, %s", err)
 	}
-	newLocationString := mux.Vars(r)["location"]
-	newLocationArray := strings.Split(newLocationString, ",")
-	newLocation := dal.Location{
-		City:    newLocationArray[0],
-		State:   newLocationArray[1],
-		Country: newLocationArray[2],
+
+	body, readErr := ioutil.ReadAll(r.Body)
+	if readErr != nil {
+		log.Println(readErr)
 	}
 
-	googleMapController := NewGoogleMapsController()
+	newLocation := dal.Location{}
 
-	artistLocation, err := googleMapController.NormalizeLocation(newLocation)
+	jsonErr := json.Unmarshal(body, &newLocation)
 
-	artistLocation = ac.checkForExistingLocation(*artistLocation)
+	if jsonErr != nil {
+		log.Println(jsonErr)
+	}
+
+	artistLocation := ac.checkForExistingLocation(newLocation)
 
 	if artistLocation.Latitude == 0 {
-		artistLocation, err = googleMapController.GetCoordinates(*artistLocation)
+		newLocation.ID = artistLocation.ID
+		ac.locationStore.UpdateLocation(newLocation)
 	}
 
-	artistToUpdate, err := ac.artistStore.GetArtistByID(artistId)
+	artistToUpdate, err := ac.artistStore.GetArtistByID(artistID)
 
 	if err != nil {
 		log.Printf("artistController line 103, artist: %d .err: %s", artistToUpdate.ID, err)
-		log.Println(artistToUpdate)
 	}
 
 	artistToUpdate.Location = *artistLocation
 
-	ac.artistStore.UpdateArtist(artistToUpdate)
+	artistToUpdate.ID, err = ac.artistStore.UpdateArtist(artistToUpdate)
+	if err != nil {
+		log.Println(err)
+	} else {
+		if err := json.NewEncoder(w).Encode(artistToUpdate); err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 func (ac *ArtistController) checkForExistingLocation(locationToCheck dal.Location) *dal.Location {
@@ -155,6 +167,7 @@ func (ac *ArtistController) checkForExistingLocation(locationToCheck dal.Locatio
 				log.Println(err)
 			}
 		}
+
 	} else {
 		locationToCheck = location
 	}

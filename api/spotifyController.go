@@ -190,7 +190,7 @@ type savedAlbum struct {
 	Album   spotifyAlbum `json:"album"`
 }
 
-const redirectURI string = "https://bandsfromtown.herokuapp.com/spotify/login/"
+const redirectURI string = "http://localhost:8080/spotify/login/"
 
 func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.LocationStore) *SpotifyController {
 
@@ -227,7 +227,6 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 	u.RawQuery = q.Encode()
 
 	http.Redirect(w, r, u.String(), http.StatusPermanentRedirect)
-
 }
 
 func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *http.Request) {
@@ -323,28 +322,28 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 	}
 
 	//start requesting playlists
-	playlistResultPage := makePlaylistRequest(userToken, 0)
-	playlists := playlistResultPage.Playlists
-	//get all the playlists.
-	for numPlaylists := 50; numPlaylists <= playlistResultPage.Total; numPlaylists += 50 {
-		playlists = append(playlists, makePlaylistRequest(userToken, numPlaylists).Playlists...)
-	}
+	// playlistResultPage := makePlaylistRequest(userToken, 0)
+	// playlists := playlistResultPage.Playlists
+	// //get all the playlists.
+	// for numPlaylists := 50; numPlaylists <= playlistResultPage.Total; numPlaylists += 50 {
+	// 	playlists = append(playlists, makePlaylistRequest(userToken, numPlaylists).Playlists...)
+	// }
 
-	for _, playlist := range playlists {
-		trackOffset := 0
+	// for _, playlist := range playlists {
+	// 	trackOffset := 0
 
-		trackPage := makePlaylistTrackRequest(userToken, trackOffset, playlist)
-		for _, track := range trackPage.PlaylistTracks {
-			artistList = append(artistList, spotifyArtistToArtist(artistMap, track.Track.Artists...)...)
-		}
+	// 	trackPage := makePlaylistTrackRequest(userToken, trackOffset, playlist)
+	// 	for _, track := range trackPage.PlaylistTracks {
+	// 		artistList = append(artistList, spotifyArtistToArtist(artistMap, track.Track.Artists...)...)
+	// 	}
 
-		for trackOffset := 100; trackOffset <= trackPage.Total; trackOffset += 100 {
-			trackPage = makePlaylistTrackRequest(userToken, trackOffset, playlist)
-			for _, track := range trackPage.PlaylistTracks {
-				artistList = append(artistList, spotifyArtistToArtist(artistMap, track.Track.Artists...)...)
-			}
-		}
-	}
+	// 	for trackOffset := 100; trackOffset <= trackPage.Total; trackOffset += 100 {
+	// 		trackPage = makePlaylistTrackRequest(userToken, trackOffset, playlist)
+	// 		for _, track := range trackPage.PlaylistTracks {
+	// 			artistList = append(artistList, spotifyArtistToArtist(artistMap, track.Track.Artists...)...)
+	// 		}
+	// 	}
+	// }
 
 	artistList = sc.getArtistLocations(artistList)
 	return artistList
