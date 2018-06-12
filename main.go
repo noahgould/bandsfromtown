@@ -13,7 +13,7 @@ import (
 
 func main() {
 	r := mux.NewRouter()
-	db, err := dal.StartDB(os.Getenv("LOCAL_DATABASE_URL"))
+	db, err := dal.StartDB(os.Getenv("CLEARDB_DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
