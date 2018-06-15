@@ -14,6 +14,16 @@
         height: 100%;
     }
 
+    .artistWithNoLocation {
+        border: 2px solid blue;
+        background-color: white;
+        color: black;
+        padding: 10px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    
+
 </style>
 <head>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"
@@ -36,6 +46,9 @@
 
     var map, marker;
 
+    var autoCompleteScriptLoaded = false;
+    var updateArtistID = 0;
+
     function getArtists() {
         document.getElementById("whereButton").style.display = "none"
         var accessToken = "{{.}}"
@@ -54,11 +67,9 @@
                 } else {
                     addLocationToMap(artist)
                 }
-            })
+            });
         }
-
     }
-
 
     function addLocationToMap(artist) {
         if(typeof map !== "undefined") {
@@ -82,12 +93,116 @@
         unknownDiv = document.getElementById("unknownLocations")
         if (unknownDiv.style.display == "none") { unknownDiv.style.display = "block"};
         unknownDiv.appendChild(document.createElement("br"));
-        newArtist = document.createTextNode(artist.name)
+        newArtist = document.createElement("div")
+        newArtistName = document.createElement("button")
+        newArtistName.appendChild(document.createTextNode(artist.name))
+        newArtistName.id = artist.id
+        newArtistName.classList.add('artistWithNoLocation');
+        newArtistName.addEventListener('click', artistChosen, false);
+        newArtist.appendChild(newArtistName)
+
         unknownDiv.appendChild(newArtist);
+    }
+
+    var artistChosen = function(artistToUpdate) {
+        var artistID = artistToUpdate.target.id;
+        updateArtistID = artistID;
+        var divForUpdateBox = artistToUpdate.target.parentNode;
+
+
+        var autoCompleteExistAlready = document.getElementById("newLocationAutocomplete")
+
+        if (!autoCompleteExistAlready) {
+            var autocompleteBox = document.createElement("input")
+            autocompleteBox.type = "text"
+            autocompleteBox.id = "newLocationAutocomplete"
+            autocompleteBox.placeholder = "Enter Artist Hometown"
+            autocompleteBox.style.width = "60%"
+            autocompleteBox.style.padding = "10px"
+            divForUpdateBox.appendChild(autocompleteBox)
+        } else {
+            divForUpdateBox.appendChild(autoCompleteExistAlready)
+        }
+
+        if (!autoCompleteScriptLoaded) {
+            loadAutocompleteScript()
+            autoCompleteScriptLoaded = true;        
+        } else {
+            setupAutoCompleteField()
+        }
+    }
+
+    function loadAutocompleteScript() {
+        var acScript = document.createElement('script')
+        acScript.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyC8kHq3gMWAZBbOMmerzHB4kCTfdM0cEUY&libraries=places&callback=setupAutoCompleteField"
+        var head = document.getElementsByTagName("head")[0];
+        head.appendChild(acScript);
+    }
+
+    function setupAutoCompleteField() {
+        var defaultBounds = new google.maps.LatLngBounds(
+            new google.maps.LatLng(-90,-180),
+            new google.maps.LatLng(90,180));
+
+        var input = document.getElementById('newLocationAutocomplete');
+        var options = {
+            bounds: defaultBounds,
+            types: ['(regions)']
+        };
+ 
+        autocomplete = new google.maps.places.Autocomplete(input, options);
+        autocomplete.addListener('place_changed', updateArtistLocation)
+    }
+     
+     function updateArtistLocation() {
+        var newLocation = autocomplete.getPlace();
+
+        var numAddressComponents = newLocation.address_components.length;
+
+        var artistLocation = {
+            ID: 0,
+            city: newLocation.address_components[0].long_name,
+            state : newLocation.address_components[numAddressComponents - 2].long_name,
+            country : newLocation.address_components[numAddressComponents - 1].long_name,
+            google_place_id : newLocation.place_id,
+            location_string : newLocation.formatted_address,
+            latitude : newLocation.geometry.location.lat(),
+            longitude : newLocation.geometry.location.lng(),
+        }
+
+        updateLocation(artistLocation)
+     }
+
+    function updateLocation(newLocation) {
+
+        var artistID = updateArtistID;
+
+        let request = new XMLHttpRequest();
+        let url = "http://localhost:8080/" + "artist/updateLocation/" + artistID
+        request.open("POST", url);
+        request.setRequestHeader("Content-type", "application/json")
+        request.send(JSON.stringify(newLocation))
+
+        request.onload = function () {
+            var response = JSON.parse(request.responseText);
+            addLocationToMap(response)
+        }
+
+        removeAutocompleteBox()
+        removeArtistDiv(artistID)
+    }
+
+    function removeAutocompleteBox () {
+        var acBox = document.getElementById("newLocationAutocomplete");
+        acBox.remove();
+    }
+
+    function removeArtistDiv(artistID) {
+        var artistDiv = document.getElementById(artistID);
+        artistDiv.remove();
     }
 
 
 </script>
-
 </body>
 </html>
