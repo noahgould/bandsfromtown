@@ -92,8 +92,9 @@
     function addUnknownLocation(artist) {
         unknownDiv = document.getElementById("unknownLocations")
         if (unknownDiv.style.display == "none") { unknownDiv.style.display = "block"};
-        unknownDiv.appendChild(document.createElement("br"));
         newArtist = document.createElement("div")
+        newArtist.style.width = "100%"
+        newArtist.style.margin = "10px"
         newArtistName = document.createElement("button")
         newArtistName.appendChild(document.createTextNode(artist.name))
         newArtistName.id = artist.id
@@ -119,6 +120,7 @@
             autocompleteBox.placeholder = "Enter Artist Hometown"
             autocompleteBox.style.width = "60%"
             autocompleteBox.style.padding = "10px"
+            autocompleteBox.style.marginLeft = "10px"
             divForUpdateBox.appendChild(autocompleteBox)
         } else {
             divForUpdateBox.appendChild(autoCompleteExistAlready)
