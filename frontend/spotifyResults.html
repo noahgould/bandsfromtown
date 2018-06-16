@@ -3,6 +3,7 @@
     div {
         font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
     }
+
     #container{
         min-height: 100%;
         display: flex;
@@ -21,6 +22,17 @@
         padding: 10px;
         font-size: 16px;
         cursor: pointer;
+    }
+
+    #whereButton {
+        color: white;
+        background-color: #1db954;
+        border-radius: 500px;
+        width:60%;
+        padding: 15px;
+        font-size: 16px;
+        text-decoration: none;
+        margin: auto;
     }
     
 
@@ -49,6 +61,17 @@
     var autoCompleteScriptLoaded = false;
     var updateArtistID = 0;
 
+    window.onload = loadMap;
+
+    function loadMap() {
+        map = L.map('mapid').setView([0, 0], 5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map)
+    }
+
     function getArtists() {
         document.getElementById("whereButton").style.display = "none"
         var accessToken = "{{.}}"
@@ -72,21 +95,9 @@
     }
 
     function addLocationToMap(artist) {
-        if(typeof map !== "undefined") {
                 map.panTo([artist.location.latitude, artist.location.longitude])
                 marker = new L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
                 marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
-            } else {
-                map = L.map('mapid').setView([artist.location.latitude, artist.location.longitude], 5);
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                }).addTo(map)
-
-                marker = L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
-            }
     }
 
     function addUnknownLocation(artist) {
