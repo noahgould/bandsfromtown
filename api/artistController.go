@@ -25,14 +25,6 @@ func NewArtistController(newArtistStore dal.ArtistStore, newLocationStore dal.Lo
 	}
 }
 
-func (ac *ArtistController) Register() {
-	http.HandleFunc("/artist", ac.LookupArtist)
-}
-
-func (ac *ArtistController) Index(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, r.URL.Path[1:])
-}
-
 func parseArtistName(name string) string {
 	parsedName := strings.Replace(name, "%20", " ", -1)
 	parsedName = strings.Replace(parsedName, "_", " ", -1)
