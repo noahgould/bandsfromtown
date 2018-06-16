@@ -191,7 +191,7 @@
         var artistID = updateArtistID;
 
         let request = new XMLHttpRequest();
-        let url = "http://localhost:8080/" + "artist/updateLocation/" + artistID
+        let url = "https://bandsfromtown.herokuapp.com/" + "artist/updateLocation/" + artistID
         request.open("POST", url);
         request.setRequestHeader("Content-type", "application/json")
         request.send(JSON.stringify(newLocation))
