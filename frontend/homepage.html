@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<style>
+
+    html { 
+        background: url(assets/worldMap.jpg) no-repeat center center fixed; 
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
+    }
+
+    html, body {
+        height:100%;
+        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .header {
+        text-align: center;
+        font-size: 22px;
+    }
+
+    .landingPage {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .landingColumn {
+        width: 50%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items:center;
+        text-align:center;
+    }
+
+    #spotifyLogin {
+        color: white;
+        background-color: #1db954;
+        border-radius: 500px;
+        width:60%;
+        padding: 15px;
+        font-size: 16px;
+        text-decoration: none;
+    }
+
+</style>
+<head></head>
+<html>
+<body>
+<div class=header id=landingHeader>bandsFromTown</div>
+<div class=landingPage>
+    <div class=landingColumn id=singleArtistColumn>
+        <div class=columnContent>
+            <h1>Look up your favorite Artist</h1>
+            <input type="text" id="artistInput" name="artistname" style="font-size: 24pt" >
+        </div>
+    </div>
+    <div class=landingColumn id=spotifyColumn>
+        <div class="columnContent">
+            <h1>Find out where your Spotify Artists are From</h1>
+            <a id=spotifyLogin href='/spotify/auth/'>
+                Login to Spotify</a>        
+            </div>
+    </div>
+
+</div>
+<script>
+        document.getElementById("artistInput")
+        .addEventListener("keyup", function(event) {
+            event.preventDefault();
+            if (event.keyCode === 13 ) {
+                var artistName = document.getElementById("artistInput").value;
+                window.location.href = "/artist/" + artistName
+            }
+        });
+</script>
+</body>
+</html>

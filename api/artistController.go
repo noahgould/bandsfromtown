@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -25,14 +26,6 @@ func NewArtistController(newArtistStore dal.ArtistStore, newLocationStore dal.Lo
 	}
 }
 
-func (ac *ArtistController) Register() {
-	http.HandleFunc("/artist", ac.LookupArtist)
-}
-
-func (ac *ArtistController) Index(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, r.URL.Path[1:])
-}
-
 func parseArtistName(name string) string {
 	parsedName := strings.Replace(name, "%20", " ", -1)
 	parsedName = strings.Replace(parsedName, "_", " ", -1)
@@ -46,6 +39,12 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	artistName := parseArtistName(mux.Vars(r)["artist"])
+	jsonOnlyString := mux.Vars(r)["jsonOnly"]
+	var jsonOnly = false
+
+	if jsonOnlyString == "t" || jsonOnlyString == "T" {
+		jsonOnly = true
+	}
 
 	if artistName == "" {
 		w.Write([]byte("No artist entered."))
@@ -99,9 +98,21 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			}
 		}
 
-		if err := json.NewEncoder(w).Encode(artists); err != nil {
-			log.Fatal(err)
+		if jsonOnly {
+			if err := json.NewEncoder(w).Encode(artists); err != nil {
+				log.Println(err)
+			}
+		} else {
+			t, err := template.ParseFiles("./frontend/artistLookup.html")
+			if err != nil {
+				log.Print("template parsing error: ", err)
+			}
+			err = t.Execute(w, artists[0])
+			if err != nil {
+				log.Print("template executing error: ", err)
+			}
 		}
+
 	}
 
 }

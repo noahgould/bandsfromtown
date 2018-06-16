@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-
 	"github.com/noahgould/bandsfromtown/api"
 	"github.com/noahgould/bandsfromtown/dal"
 )
@@ -22,12 +21,13 @@ func main() {
 	locationStore := dal.NewLocationStore(db)
 	artistController := api.NewArtistController(artistStore, locationStore)
 	spotifyController := api.NewSpotifyController(artistStore, locationStore)
+	homepageController := api.NewHomepageController()
 
 	r.HandleFunc("/artist/{artist}", artistController.LookupArtist).Methods("GET", "OPTIONS")
+	r.HandleFunc("/artist/{artist}/{jsonOnly}", artistController.LookupArtist).Methods("GET", "OPTIONS")
 	r.HandleFunc("/artist/updateLocation/{artistID}", artistController.UpdateArtistLocation).Methods("POST", "OPTIONS")
-	r.HandleFunc("/artist", artistController.Index)
 	r.PathPrefix("/frontend/").Handler(http.StripPrefix("/frontend/", http.FileServer(http.Dir("frontend"))))
-	r.Handle("/", http.RedirectHandler("/frontend/artistLookup.html", 301))
+	r.HandleFunc("/", homepageController.Index)
 	r.HandleFunc("/spotify/auth/", spotifyController.AuthorizationRequest)
 	r.HandleFunc("/spotify/login/", spotifyController.AuthorizationCallback)
 	r.HandleFunc("/spotify/locations/{accessToken}", spotifyController.FindUserArtistLocations)
