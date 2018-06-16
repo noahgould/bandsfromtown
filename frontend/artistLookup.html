@@ -19,17 +19,14 @@
     <h1>Where is</h1>
 </div>
 <div style="display:inline-block">
-        <input type="text" id="artistInput" name="artistname" style="font-size: 24pt" >
+        <input type="text" id="artistInput" name="artistname" style="font-size: 24pt" value={{.Name}} ></input>
 </div>
 <div style="display:inline-block">
         <h1>From?</h1>
 </div>
 
 <div>
-    <h1 id="full-location"></h1>
-    <h1 id="city"></h1>
-    <h1 id="state"></h1>
-    <h1 id="country"></h1>
+    <h1 id="full-location">{{.FullLocation}}</h1>
 </div>
 <div id="mapid"></div>
 <div id=locationUpdate style="display:block">
@@ -45,6 +42,28 @@
 <script>
 
     var autocomplete;
+    var newLatLng = ["{{.Latitude}}", "{{.Longitude}}"]
+
+    window.onload = pageLoaded;
+
+    function pageLoaded() {
+        var newLocation = {
+            'location_string' : document.getElementById("full-location").innerHTML,
+            'latitude' : newLatLng[0],
+            'longitude' : newLatLng[1],
+        }
+        loadMap();
+        addLocationToMap(newLocation)
+    }
+
+    function loadMap() {
+        map = L.map('mapid').setView([0, 0], 5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map)
+    }
 
     document.getElementById("artistInput")
         .addEventListener("keyup", function(event) {
@@ -74,29 +93,29 @@
         autocomplete.addListener('place_changed', updateArtistLocation)
     }
      
-     function updateArtistLocation() {
-        var newLocation = autocomplete.getPlace();
+    function updateArtistLocation() {
+    var newLocation = autocomplete.getPlace();
 
-        var artistLocation = {
-            ID: 0,
-            city: newLocation.address_components[0].long_name,
-            state : newLocation.address_components[2].long_name,
-            country : newLocation.address_components[3].long_name,
-            google_place_id : newLocation.place_id,
-            location_string : newLocation.formatted_address,
-            latitude : newLocation.geometry.location.lat(),
-            longitude : newLocation.geometry.location.lng(),
-        }
+    var artistLocation = {
+        ID: 0,
+        city: newLocation.address_components[0].long_name,
+        state : newLocation.address_components[2].long_name,
+        country : newLocation.address_components[3].long_name,
+        google_place_id : newLocation.place_id,
+        location_string : newLocation.formatted_address,
+        latitude : newLocation.geometry.location.lat(),
+        longitude : newLocation.geometry.location.lng(),
+    }
 
-        updateLocation(artistLocation)
-     }
+    updateLocation(artistLocation)
+    }
 
     function updateLocation(newLocation) {
 
         var artistID = document.getElementById("artistID").value;
 
         let request = new XMLHttpRequest();
-        let url = "http://localhost:8080/" + "artist/updateLocation/" + artistID
+        let url = "http://localhost:8080/" + "artist/updateLocation/" + artistID + "/t"
         request.open("POST", url);
         request.setRequestHeader("Content-type", "application/json")
         request.send(JSON.stringify(newLocation))
@@ -114,7 +133,7 @@
     function lookupArtist() {
         var artistName = document.getElementById("artistInput").value;
         let request = new XMLHttpRequest();
-        let url = "http://localhost:8080" + "/artist/" + artistName;
+        let url = "http://localhost:8080" + "/artist/" + artistName + "/t";
         request.open("GET", url);
         request.setRequestHeader("Content-type", "application/json");
         request.send();
@@ -130,21 +149,9 @@
     }
 
     function addLocationToMap(location) {
-        if(typeof map !== "undefined") {
-                map.panTo([location.latitude, location.longitude])
-                marker = new L.marker([location.latitude, location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + name +"</b><br>"+location.location_string);
-            } else {
-                map = L.map('mapid').setView([location.latitude, location.longitude], 5);
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                }).addTo(map)
-
-                marker = L.marker([location.latitude, location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + name +"</b><br>"+location.location_string);
-            }
+        map.panTo([location.latitude, location.longitude])
+        marker = new L.marker([location.latitude, location.longitude]).addTo(map);
+        marker.bindPopup("<b>" + name +"</b><br>"+location.location_string);
     }
 
 

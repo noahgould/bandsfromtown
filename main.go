@@ -24,6 +24,7 @@ func main() {
 	homepageController := api.NewHomepageController()
 
 	r.HandleFunc("/artist/{artist}", artistController.LookupArtist).Methods("GET", "OPTIONS")
+	r.HandleFunc("/artist/{artist}/{jsonOnly}", artistController.LookupArtist).Methods("GET", "OPTIONS")
 	r.HandleFunc("/artist/updateLocation/{artistID}", artistController.UpdateArtistLocation).Methods("POST", "OPTIONS")
 	r.PathPrefix("/frontend/").Handler(http.StripPrefix("/frontend/", http.FileServer(http.Dir("frontend"))))
 	r.HandleFunc("/", homepageController.Index)

@@ -68,6 +68,14 @@
 
 </div>
 <script>
+        document.getElementById("artistInput")
+        .addEventListener("keyup", function(event) {
+            event.preventDefault();
+            if (event.keyCode === 13 ) {
+                var artistName = document.getElementById("artistInput").value;
+                window.location.href = "/artist/" + artistName
+            }
+        });
 </script>
 </body>
 </html>
