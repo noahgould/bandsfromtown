@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-
 	"github.com/noahgould/bandsfromtown/api"
 	"github.com/noahgould/bandsfromtown/dal"
 )
