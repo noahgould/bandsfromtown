@@ -23,6 +23,7 @@ func main() {
 	spotifyController := api.NewSpotifyController(artistStore, locationStore)
 	homepageController := api.NewHomepageController()
 
+	r.StrictSlash(true)
 	r.HandleFunc("/artist/{artist}", artistController.LookupArtist).Methods("GET", "OPTIONS")
 	r.HandleFunc("/artist/{artist}/{jsonOnly}", artistController.LookupArtist).Methods("GET", "OPTIONS")
 	r.HandleFunc("/artist/updateLocation/{artistID}", artistController.UpdateArtistLocation).Methods("POST", "OPTIONS")
@@ -31,6 +32,7 @@ func main() {
 	r.HandleFunc("/spotify/auth/", spotifyController.AuthorizationRequest)
 	r.HandleFunc("/spotify/login/", spotifyController.AuthorizationCallback)
 	r.HandleFunc("/spotify/locations/{accessToken}", spotifyController.FindUserArtistLocations)
+	r.HandleFunc("/about/", homepageController.AboutPage)
 
 	port := os.Getenv("PORT")
 	if port == "" {
