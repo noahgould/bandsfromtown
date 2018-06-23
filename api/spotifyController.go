@@ -242,70 +242,76 @@ func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimp
 	return firstPage
 }
 
-func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Artist {
-	gmc := NewGoogleMapsController()
+func (sc *SpotifyController) checkSavedWithSpotify(artists []dal.Artist) []dal.Artist {
+	readyArtists := []dal.Artist{}
 
-	var err error
-	stopQueryingGoogle := false
 	for i, artist := range artists {
-		var existingArtist dal.Artist
-		existingArtist, err = sc.artistStore.GetArtistBySpotifyID(artist.SpotifyID)
+		existingArtist, err := sc.artistStore.GetArtistBySpotifyID(artist.SpotifyID)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				possibleArtists, err := sc.artistStore.GetArtistsByName(artist.Name)
-				if len(possibleArtists) == 0 {
-					if err == nil {
-						if !stopQueryingGoogle {
-							artists[i].Location = LookupArtistLocation(artist.Name)
-							locationPtr, err := gmc.NormalizeLocation(artists[i].Location)
-							if err != nil {
-								if err.Error() == "maps: OVER_QUERY_LIMIT - You have exceeded your daily request quota for this API.." {
-									stopQueryingGoogle = true
-								} else {
-									log.Println(err)
-								}
-							}
-							artists[i].Location = *locationPtr
-							var exists bool
-							exists, artists[i].Location = sc.locationStore.CheckForExistingLocation(artists[i].Location)
-							if !exists {
-								if artists[i].Location.Longitude == 0 && artists[i].Location.GooglePlaceID != "-1" {
-									locationPointer, err := gmc.GetCoordinates(artists[i].Location)
-									if err != nil {
-										log.Println(err)
-									}
-									artists[i].Location = *locationPointer
-								}
-								artists[i].Location.ID, err = sc.locationStore.AddLocation(artists[i].Location)
-								if err != nil {
-									log.Println(err)
-								}
-
-								artists[i].ID, err = sc.artistStore.AddArtist(artists[i])
-								if err != nil {
-									log.Println(err)
-								}
-
-							} else {
-								sc.artistStore.AddArtist(artists[i])
-							}
-						}
-					} else {
-						log.Println(err)
-					}
-				} else {
-					artists[i] = possibleArtists[0]
-					artists[i].Location, err = sc.locationStore.GetLocationByID(possibleArtists[0].Location.ID)
-					if err != nil {
-						log.Println(err)
-					}
-				}
-			} else {
+			if err != sql.ErrNoRows {
 				log.Println(err)
 			}
 		} else {
-			artists[i] = existingArtist
-			artists[i].Location, err = sc.locationStore.GetLocationByID(existingArtist.Location.ID)
+			readyArtists = append(readyArtists, existingArtist)
+			artists = append(artists[:i], artists[i+1:]...)
+		}
+	}
+
+	return readyArtists
+}
+
+func (sc *SpotifyController) checkSavedByName(artists []dal.Artist) []dal.Artist {
+	readyArtists := []dal.Artist{}
+
+	for i, artist := range artists {
+		existingArtists, err := sc.artistStore.GetArtistsByName(artist.Name)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				log.Println(err)
+			}
+		} else {
+			readyArtists = append(readyArtists, existingArtists[0])
+			artists = append(artists[:i], artists[i+1:]...)
+		}
+	}
+
+	return readyArtists
+}
+
+func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Artist {
+	gmc := NewGoogleMapsController()
+
+	readyArtists := sc.checkSavedWithSpotify(artists)
+	readyArtists = append(readyArtists, sc.checkSavedByName(artists)...)
+
+	for i, artist := range artists {
+		artists[i].Location = LookupArtistLocation(artist.Name)
+		locationPtr, err := gmc.NormalizeLocation(artists[i].Location)
+		if err != nil {
+			log.Println(err)
+		}
+		artists[i].Location = *locationPtr
+		var exists bool
+		exists, artists[i].Location = sc.locationStore.CheckForExistingLocation(artists[i].Location)
+		if !exists {
+			if artists[i].Location.Longitude == 0 && artists[i].Location.GooglePlaceID != "-1" {
+				locationPointer, err := gmc.GetCoordinates(artists[i].Location)
+				if err != nil {
+					log.Println(err)
+				}
+				artists[i].Location = *locationPointer
+			}
+			artists[i].Location.ID, err = sc.locationStore.AddLocation(artists[i].Location)
+			if err != nil {
+				log.Println(err)
+			}
+
+			artists[i].ID, err = sc.artistStore.AddArtist(artists[i])
+			if err != nil {
+				log.Println(err)
+			}
+		} else {
+			artists[i].ID, err = sc.artistStore.AddArtist(artists[i])
 			if err != nil {
 				log.Println(err)
 			}
