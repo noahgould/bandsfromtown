@@ -165,7 +165,6 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 		for _, a := range artistList {
 			artistChan <- a
 		}
-		fmt.Println("close artistlist to artist chan")
 		close(artistChan)
 	}()
 
@@ -307,7 +306,6 @@ func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyAr
 }
 
 func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal.Artist {
-	gmc := NewGoogleMapsController()
 
 	readyArtists := make(chan dal.Artist)
 
@@ -334,41 +332,134 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 		}
 	}
 
-	for i, artist := range artistList {
-		artistList[i].Location = LookupArtistLocation(artist.Name)
-		locationPtr, err := gmc.NormalizeLocation(artistList[i].Location)
-		if err != nil {
-			log.Println(err)
-		}
-		artistList[i].Location = *locationPtr
-		var exists bool
-		exists, artistList[i].Location = sc.locationStore.CheckForExistingLocation(artistList[i].Location)
-		if !exists {
-			if artistList[i].Location.Longitude == 0 && artistList[i].Location.GooglePlaceID != "-1" {
-				locationPointer, err := gmc.GetCoordinates(artistList[i].Location)
-				if err != nil {
-					log.Println(err)
-				}
-				artistList[i].Location = *locationPointer
-			}
-			artistList[i].Location.ID, err = sc.locationStore.AddLocation(artistList[i].Location)
-			if err != nil {
-				log.Println(err)
-			}
-
-			artistList[i].ID, err = sc.artistStore.AddArtist(artistList[i])
-			if err != nil {
-				log.Println(err)
-			}
-		} else {
-			artistList[i].ID, err = sc.artistStore.AddArtist(artistList[i])
-			if err != nil {
-				log.Println(err)
-			}
-		}
-	}
+	artistList = sc.lookupArtistLocations(artistList)
 
 	return append(artistList, readyArtistList...)
+}
+
+func (sc *SpotifyController) lookupArtistLocations(artistList []dal.Artist) []dal.Artist {
+	gmc := NewGoogleMapsController()
+
+	//1. Lookup location 2. Normalize 3. check existing 4. a. save artist w/ existing b. save new location, then save artist.
+
+	locationLookup := make(chan dal.Artist)
+	locationNormalize := make(chan dal.Artist)
+	existingLocationCheck := make(chan dal.Artist)
+	locationCoordinates := make(chan dal.Artist)
+	saveLocation := make(chan dal.Artist)
+	saveArtist := make(chan dal.Artist)
+
+	go func() {
+		for _, artist := range artistList {
+			locationLookup <- artist
+		}
+		close(locationLookup)
+	}()
+
+	go func() {
+		for a := range locationLookup {
+			a.Location = LookupArtistLocation(a.Name)
+			locationNormalize <- a
+		}
+		close(locationNormalize)
+
+	}()
+
+	go func() {
+		for a := range locationNormalize {
+			locationPtr, err := gmc.NormalizeLocation(a.Location)
+			if err != nil {
+				log.Println(err)
+			}
+			a.Location = *locationPtr
+			existingLocationCheck <- a
+		}
+		close(existingLocationCheck)
+	}()
+
+	go func() {
+		for a := range existingLocationCheck {
+			var exists bool
+			exists, a.Location = sc.locationStore.CheckForExistingLocation(a.Location)
+			if !exists {
+				locationCoordinates <- a
+			} else {
+				saveArtist <- a
+			}
+		}
+		close(locationCoordinates)
+	}()
+
+	go func() {
+		for a := range locationCoordinates {
+			locationPtr, err := gmc.GetCoordinates(a.Location)
+			if err != nil {
+				log.Println(err)
+			} else {
+				a.Location = *locationPtr
+				saveLocation <- a
+			}
+		}
+		close(saveLocation)
+	}()
+
+	var err error
+
+	go func() {
+		for a := range saveLocation {
+			a.Location.ID, err = sc.locationStore.AddLocation(a.Location)
+			if err != nil {
+				log.Println(err)
+			}
+			saveArtist <- a
+		}
+		close(saveArtist)
+	}()
+
+	go func() {
+		for a := range saveArtist {
+			a.ID, err = sc.artistStore.AddArtist(a)
+			if err != nil {
+				log.Println(err)
+			}
+			artistList = append(artistList, a)
+		}
+	}()
+
+	//for i, artist := range artistList {
+	// artistList[i].Location = LookupArtistLocation(artist.Name)
+	// locationPtr, err := gmc.NormalizeLocation(artistList[i].Location)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	// artistList[i].Location = *locationPtr
+	// var exists bool
+	// exists, artistList[i].Location = sc.locationStore.CheckForExistingLocation(artistList[i].Location)
+	// if !exists {
+	// if artistList[i].Location.Longitude == 0 && artistList[i].Location.GooglePlaceID != "-1" {
+	// 	locationPointer, err := gmc.GetCoordinates(artistList[i].Location)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
+	// 	artistList[i].Location = *locationPointer
+	// }
+	// 	artistList[i].Location.ID, err = sc.locationStore.AddLocation(artistList[i].Location)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
+
+	// 	artistList[i].ID, err = sc.artistStore.AddArtist(artistList[i])
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
+	// } else {
+	// 	artistList[i].ID, err = sc.artistStore.AddArtist(artistList[i])
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
+	// }
+	//}
+	return artistList
 }
 
 func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
