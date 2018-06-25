@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -19,7 +20,7 @@ func TestGetArtistLocations(t *testing.T) {
 
 	inputArtists := []dal.Artist{
 		{Name: "Kali Uchis", SpotifyID: "1U1el3k54VvEUzo3ybLPlM"},
-		{Name: "Foster the People", SpotifyID: "7gP3bB2nilZXLfPHJhMdvc"},
+		{Name: "Foster the People"},
 		{Name: "Glass Animals", SpotifyID: "4yvcSjfu4PC0CYQyLy4wSq"},
 	}
 
@@ -29,9 +30,19 @@ func TestGetArtistLocations(t *testing.T) {
 		{Name: "Glass Animals", Location: dal.Location{City: "Oxford", State: "England", Country: "UK", FullLocation: "Oxford, England, UK", GooglePlaceID: "ChIJrx_ErYAzcUgRAnRUy6jbIMg"}, SpotifyID: "4yvcSjfu4PC0CYQyLy4wSq"},
 	}
 
+	artists := make(chan dal.Artist)
+
+	go func() {
+		for _, a := range inputArtists {
+			artists <- a
+		}
+		fmt.Println("closing artists")
+		close(artists)
+	}()
+
 	spotifyController := NewSpotifyController(artistStore, locationStore)
 
-	artistResults := spotifyController.getArtistLocations(inputArtists)
+	artistResults := spotifyController.getArtistLocations(artists)
 
 	for j, artistWithLocation := range artistResults {
 		if artistWithLocation.FullLocation != outputArtists[j].FullLocation {

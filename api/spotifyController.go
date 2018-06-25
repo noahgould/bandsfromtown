@@ -159,6 +159,16 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 		artistList = getArtistsFromAlbums(resultPage, artistList, artistMap)
 	}
 
+	artistChan := make(chan dal.Artist)
+
+	go func() {
+		for _, a := range artistList {
+			artistChan <- a
+		}
+		fmt.Println("close artistlist to artist chan")
+		close(artistChan)
+	}()
+
 	//start requesting playlists
 	// playlistResultPage := makePlaylistRequest(userToken, 0)
 	// playlists := playlistResultPage.Playlists
@@ -183,7 +193,7 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 	// 	}
 	// }
 
-	artistList = sc.getArtistLocations(artistList)
+	artistList = sc.getArtistLocations(artistChan)
 	return artistList
 }
 
@@ -242,83 +252,115 @@ func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimp
 	return firstPage
 }
 
-func (sc *SpotifyController) checkSavedWithSpotify(artists []dal.Artist) []dal.Artist {
-	readyArtists := []dal.Artist{}
+func (sc *SpotifyController) checkSavedWithSpotify(artists <-chan dal.Artist, readyArtists chan<- dal.Artist) <-chan dal.Artist {
+	notSaved := make(chan dal.Artist)
 
-	for i, artist := range artists {
-		existingArtist, err := sc.artistStore.GetArtistBySpotifyID(artist.SpotifyID)
-		if err != nil {
-			if err != sql.ErrNoRows {
-				log.Println(err)
+	fmt.Println("begin check saved spotify")
+	go func() {
+		for artist := range artists {
+			existingArtist, err := sc.artistStore.GetArtistBySpotifyID(artist.SpotifyID)
+			if err != nil {
+				if err != sql.ErrNoRows {
+					log.Println(err)
+				} else {
+					notSaved <- artist
+				}
+			} else {
+				fmt.Println(existingArtist)
+				readyArtists <- existingArtist
 			}
-		} else {
-			readyArtists = append(readyArtists, existingArtist)
-			artists = append(artists[:i], artists[i+1:]...)
 		}
-	}
+		close(notSaved)
+		fmt.Println("end check saved spotify func")
+	}()
 
-	return readyArtists
+	return notSaved
 }
 
-func (sc *SpotifyController) checkSavedByName(artists []dal.Artist) []dal.Artist {
-	readyArtists := []dal.Artist{}
+func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyArtists chan<- dal.Artist) <-chan dal.Artist {
+	notSavedArtists := make(chan dal.Artist)
 
-	for i, artist := range artists {
-		existingArtists, err := sc.artistStore.GetArtistsByName(artist.Name)
-		if err != nil {
-			if err != sql.ErrNoRows {
-				log.Println(err)
+	fmt.Println("begin check saved name")
+	go func() {
+		for artist := range artists {
+			existingArtists, err := sc.artistStore.GetArtistsByName(artist.Name)
+			if err != nil {
+				if err != sql.ErrNoRows {
+					log.Println(err)
+				} else {
+					notSavedArtists <- artist
+				}
+			} else {
+				readyArtists <- existingArtists[0]
 			}
-		} else {
-			readyArtists = append(readyArtists, existingArtists[0])
-			artists = append(artists[:i], artists[i+1:]...)
 		}
-	}
+		close(notSavedArtists)
+		close(readyArtists)
+		fmt.Println("end check saved name func")
+	}()
 
-	return readyArtists
+	return notSavedArtists
 }
 
-func (sc *SpotifyController) getArtistLocations(artists []dal.Artist) []dal.Artist {
+func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal.Artist {
 	gmc := NewGoogleMapsController()
 
-	readyArtists := sc.checkSavedWithSpotify(artists)
-	readyArtists = append(readyArtists, sc.checkSavedByName(artists)...)
+	readyArtists := make(chan dal.Artist)
 
-	for i, artist := range artists {
-		artists[i].Location = LookupArtistLocation(artist.Name)
-		locationPtr, err := gmc.NormalizeLocation(artists[i].Location)
+	noSpotifyArtists := sc.checkSavedWithSpotify(artists, readyArtists)
+	notSavedArtists := sc.checkSavedByName(noSpotifyArtists, readyArtists)
+
+	fmt.Println("get artistLocations after calling funcs.")
+	artistList := []dal.Artist{}
+
+	for artist := range notSavedArtists {
+		artistList = append(artistList, artist)
+	}
+
+	fmt.Println("after not saved artists")
+
+	fmt.Println(artistList[0])
+
+	readyArtistList := []dal.Artist{}
+	for artist := range readyArtists {
+		readyArtistList = append(readyArtistList, artist)
+	}
+
+	for i, artist := range artistList {
+		artistList[i].Location = LookupArtistLocation(artist.Name)
+		locationPtr, err := gmc.NormalizeLocation(artistList[i].Location)
 		if err != nil {
 			log.Println(err)
 		}
-		artists[i].Location = *locationPtr
+		artistList[i].Location = *locationPtr
 		var exists bool
-		exists, artists[i].Location = sc.locationStore.CheckForExistingLocation(artists[i].Location)
+		exists, artistList[i].Location = sc.locationStore.CheckForExistingLocation(artistList[i].Location)
 		if !exists {
-			if artists[i].Location.Longitude == 0 && artists[i].Location.GooglePlaceID != "-1" {
-				locationPointer, err := gmc.GetCoordinates(artists[i].Location)
+			if artistList[i].Location.Longitude == 0 && artistList[i].Location.GooglePlaceID != "-1" {
+				locationPointer, err := gmc.GetCoordinates(artistList[i].Location)
 				if err != nil {
 					log.Println(err)
 				}
-				artists[i].Location = *locationPointer
+				artistList[i].Location = *locationPointer
 			}
-			artists[i].Location.ID, err = sc.locationStore.AddLocation(artists[i].Location)
+			artistList[i].Location.ID, err = sc.locationStore.AddLocation(artistList[i].Location)
 			if err != nil {
 				log.Println(err)
 			}
 
-			artists[i].ID, err = sc.artistStore.AddArtist(artists[i])
+			artistList[i].ID, err = sc.artistStore.AddArtist(artistList[i])
 			if err != nil {
 				log.Println(err)
 			}
 		} else {
-			artists[i].ID, err = sc.artistStore.AddArtist(artists[i])
+			artistList[i].ID, err = sc.artistStore.AddArtist(artistList[i])
 			if err != nil {
 				log.Println(err)
 			}
 		}
 	}
 
-	return artists
+	return artistList
 }
 
 func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
