@@ -255,7 +255,6 @@ func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimp
 func (sc *SpotifyController) checkSavedWithSpotify(artists <-chan dal.Artist, readyArtists chan<- dal.Artist) <-chan dal.Artist {
 	notSaved := make(chan dal.Artist)
 
-	fmt.Println("begin check saved spotify")
 	go func() {
 		for artist := range artists {
 			existingArtist, err := sc.artistStore.GetArtistBySpotifyID(artist.SpotifyID)
@@ -266,12 +265,14 @@ func (sc *SpotifyController) checkSavedWithSpotify(artists <-chan dal.Artist, re
 					notSaved <- artist
 				}
 			} else {
-				fmt.Println(existingArtist)
+				existingArtist.Location, err = sc.locationStore.GetLocationByID(existingArtist.Location.ID)
+				if err != nil {
+					log.Println(err)
+				}
 				readyArtists <- existingArtist
 			}
 		}
 		close(notSaved)
-		fmt.Println("end check saved spotify func")
 	}()
 
 	return notSaved
@@ -280,7 +281,6 @@ func (sc *SpotifyController) checkSavedWithSpotify(artists <-chan dal.Artist, re
 func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyArtists chan<- dal.Artist) <-chan dal.Artist {
 	notSavedArtists := make(chan dal.Artist)
 
-	fmt.Println("begin check saved name")
 	go func() {
 		for artist := range artists {
 			existingArtists, err := sc.artistStore.GetArtistsByName(artist.Name)
@@ -291,12 +291,16 @@ func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyAr
 					notSavedArtists <- artist
 				}
 			} else {
+				existingArtists[0].Location, err = sc.locationStore.GetLocationByID(existingArtists[0].Location.ID)
+
+				if err != nil {
+					log.Println(err)
+				}
 				readyArtists <- existingArtists[0]
 			}
 		}
 		close(notSavedArtists)
 		close(readyArtists)
-		fmt.Println("end check saved name func")
 	}()
 
 	return notSavedArtists
@@ -310,20 +314,24 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 	noSpotifyArtists := sc.checkSavedWithSpotify(artists, readyArtists)
 	notSavedArtists := sc.checkSavedByName(noSpotifyArtists, readyArtists)
 
-	fmt.Println("get artistLocations after calling funcs.")
 	artistList := []dal.Artist{}
-
-	for artist := range notSavedArtists {
-		artistList = append(artistList, artist)
-	}
-
-	fmt.Println("after not saved artists")
-
-	fmt.Println(artistList[0])
-
 	readyArtistList := []dal.Artist{}
-	for artist := range readyArtists {
-		readyArtistList = append(readyArtistList, artist)
+
+	for notSavedArtists != nil || readyArtists != nil {
+		select {
+		case needToSave, ok := <-notSavedArtists:
+			if !ok {
+				notSavedArtists = nil
+			} else {
+				artistList = append(artistList, needToSave)
+			}
+		case savedArtist, ok := <-readyArtists:
+			if !ok {
+				readyArtists = nil
+			} else {
+				readyArtistList = append(readyArtistList, savedArtist)
+			}
+		}
 	}
 
 	for i, artist := range artistList {
@@ -360,7 +368,7 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 		}
 	}
 
-	return artistList
+	return append(artistList, readyArtistList...)
 }
 
 func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
