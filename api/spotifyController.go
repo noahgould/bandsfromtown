@@ -338,7 +338,8 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 
 	artistList = sc.lookupArtistLocations(artistList)
 
-	return append(artistList, readyArtistList...)
+	fullArtistList := append(artistList, readyArtistList...)
+	return fullArtistList
 }
 
 func (sc *SpotifyController) lookupArtistLocations(artistList []dal.Artist) []dal.Artist {
