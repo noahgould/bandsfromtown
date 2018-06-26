@@ -290,12 +290,16 @@ func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyAr
 					notSavedArtists <- artist
 				}
 			} else {
-				existingArtists[0].Location, err = sc.locationStore.GetLocationByID(existingArtists[0].Location.ID)
+				if len(existingArtists) == 0 {
+					notSavedArtists <- artist
+				} else {
+					existingArtists[0].Location, err = sc.locationStore.GetLocationByID(existingArtists[0].Location.ID)
 
-				if err != nil {
-					log.Println(err)
+					if err != nil {
+						log.Println(err)
+					}
+					readyArtists <- existingArtists[0]
 				}
-				readyArtists <- existingArtists[0]
 			}
 		}
 		close(notSavedArtists)
@@ -339,8 +343,6 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 
 func (sc *SpotifyController) lookupArtistLocations(artistList []dal.Artist) []dal.Artist {
 	gmc := NewGoogleMapsController()
-
-	//1. Lookup location 2. Normalize 3. check existing 4. a. save artist w/ existing b. save new location, then save artist.
 
 	locationLookup := make(chan dal.Artist)
 	locationNormalize := make(chan dal.Artist)
@@ -426,39 +428,6 @@ func (sc *SpotifyController) lookupArtistLocations(artistList []dal.Artist) []da
 		}
 	}()
 
-	//for i, artist := range artistList {
-	// artistList[i].Location = LookupArtistLocation(artist.Name)
-	// locationPtr, err := gmc.NormalizeLocation(artistList[i].Location)
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	// artistList[i].Location = *locationPtr
-	// var exists bool
-	// exists, artistList[i].Location = sc.locationStore.CheckForExistingLocation(artistList[i].Location)
-	// if !exists {
-	// if artistList[i].Location.Longitude == 0 && artistList[i].Location.GooglePlaceID != "-1" {
-	// 	locationPointer, err := gmc.GetCoordinates(artistList[i].Location)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 	}
-	// 	artistList[i].Location = *locationPointer
-	// }
-	// 	artistList[i].Location.ID, err = sc.locationStore.AddLocation(artistList[i].Location)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 	}
-
-	// 	artistList[i].ID, err = sc.artistStore.AddArtist(artistList[i])
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 	}
-	// } else {
-	// 	artistList[i].ID, err = sc.artistStore.AddArtist(artistList[i])
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 	}
-	// }
-	//}
 	return artistList
 }
 
