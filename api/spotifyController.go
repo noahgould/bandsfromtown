@@ -319,13 +319,15 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 	artistList := []dal.Artist{}
 	readyArtistList := []dal.Artist{}
 
+	artistsNeedLocation := make(chan dal.Artist)
+
 	for notSavedArtists != nil || readyArtists != nil {
 		select {
 		case needToSave, ok := <-notSavedArtists:
 			if !ok {
 				notSavedArtists = nil
 			} else {
-				artistList = append(artistList, needToSave)
+				artistsNeedLocation <- needToSave
 			}
 		case savedArtist, ok := <-readyArtists:
 			if !ok {
@@ -336,28 +338,20 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 		}
 	}
 
-	artistList = sc.lookupArtistLocations(artistList)
+	artistList = sc.lookupArtistLocations(artistsNeedLocation)
 
 	fullArtistList := append(artistList, readyArtistList...)
 	return fullArtistList
 }
 
-func (sc *SpotifyController) lookupArtistLocations(artistList []dal.Artist) []dal.Artist {
+func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artist) []dal.Artist {
 	gmc := NewGoogleMapsController()
 
-	locationLookup := make(chan dal.Artist)
 	locationNormalize := make(chan dal.Artist)
 	existingLocationCheck := make(chan dal.Artist)
 	locationCoordinates := make(chan dal.Artist)
 	saveLocation := make(chan dal.Artist)
 	saveArtist := make(chan dal.Artist)
-
-	go func() {
-		for _, artist := range artistList {
-			locationLookup <- artist
-		}
-		close(locationLookup)
-	}()
 
 	go func() {
 		for a := range locationLookup {
@@ -418,6 +412,8 @@ func (sc *SpotifyController) lookupArtistLocations(artistList []dal.Artist) []da
 		}
 		close(saveArtist)
 	}()
+
+	artistList := []dal.Artist{}
 
 	go func() {
 		for a := range saveArtist {
