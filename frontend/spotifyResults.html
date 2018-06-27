@@ -14,14 +14,14 @@
     }
 
     #container > div {
-        flex: 1;
-        height: 100%;
+        flex: 2;
+        margin: 5px;
     }
 
     .artistWithNoLocation {
-        border: 2px solid blue;
+        border: 2px solid #4CA073;
         background-color: white;
-        color: black;
+        color: #7B4D97;
         padding: 10px;
         font-size: 16px;
         cursor: pointer;
@@ -36,6 +36,22 @@
         font-size: 16px;
         text-decoration: none;
         margin: auto;
+    }
+
+    #mapid {
+        height: 700px;
+        flex-basis: 80%;
+        margin-left: 0px;
+        margin-right: 0px;
+        display: flex
+    }
+
+    #unknownLocations {
+        flex-basis: 20%;
+    }
+
+    h1 {
+        color: #110430;
     }
     
 
@@ -52,9 +68,9 @@
     {{template "header" .}}
 <body>
 <div id="container">
-    <button id="whereButton" onclick="getArtists()" type="button">Where are my artists from?</button>
-    <div id="mapid" style="height:800px"></div>
-    <div id="unknownLocations" style="display:none">
+    <!-- <button id="whereButton" onclick="getArtists()" type="button">Where are my artists from?</button> -->
+    <div id="mapid"></div>
+    <div id="unknownLocations" style="display: none">
         <h1>We were unable to find a location for the following artists. Perhaps you could add it?</h1>
     </div>
 </div>
@@ -74,10 +90,12 @@
             maxZoom: 19,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map)
+
+        getArtists();
     }
 
     function getArtists() {
-        document.getElementById("whereButton").style.display = "none"
+        // document.getElementById("whereButton").style.display = "none"
         var accessToken = "{{.}}"
 
         let request = new XMLHttpRequest();
@@ -99,9 +117,9 @@
     }
 
     function addLocationToMap(artist) {
-                map.panTo([artist.location.latitude, artist.location.longitude])
-                marker = new L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
+        map.panTo([artist.location.latitude, artist.location.longitude])
+        marker = new L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
+        marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
     }
 
     function addUnknownLocation(artist) {
