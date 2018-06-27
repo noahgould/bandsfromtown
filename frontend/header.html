@@ -1,0 +1,33 @@
+{{define "header"}}
+<style>
+    .header {
+        width:100%;
+        height:4%;
+        text-align: center;
+        background-color:#4CA073;
+    }
+
+    .headerLink {
+        color:#7B4D97;
+        padding:3px;
+        text-decoration-line: none;
+        font-size: 22px;
+    }
+
+    #aboutLink {
+        float: right;
+        margin-right:10px;
+    }
+    #homeLink {
+        margin-top:2px;
+    }
+
+</style>
+<head></head>
+<html>
+    <div class=header id=landingHeader>
+        <a class=headerLink id=homeLink href="/">bandsFromTown</a>
+        <a class=headerLink id= aboutLink href="/about/">About</a>
+    </div>
+</html>
+{{end}}

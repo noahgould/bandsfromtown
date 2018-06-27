@@ -16,7 +16,7 @@ func NewHomepageController() *HomepageController {
 
 func (hc *HomepageController) Index(w http.ResponseWriter, r *http.Request) {
 
-	t, err := template.ParseFiles("./frontend/homepage.html")
+	t, err := template.ParseFiles("./frontend/homepage.html", "./frontend/header.html")
 	if err != nil {
 		log.Println(err)
 	}
@@ -27,7 +27,7 @@ func (hc *HomepageController) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (hc *HomepageController) AboutPage(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("./frontend/aboutpage.html")
+	t, err := template.ParseFiles("./frontend/aboutpage.html", "./frontend/header.html")
 
 	if err != nil {
 		log.Println(err)
