@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <style>
-    div {
-        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+    html, body {
+        height:100%;
+        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0px;
+        background-color: #FFE5AA;
     }
 
     #container{
@@ -46,6 +49,7 @@
     crossorigin=""></script>
 </head>
 <html>
+    {{template "header" .}}
 <body>
 <div id="container">
     <button id="whereButton" onclick="getArtists()" type="button">Where are my artists from?</button>
