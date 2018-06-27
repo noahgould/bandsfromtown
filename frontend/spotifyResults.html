@@ -88,6 +88,7 @@
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
+            zoom:5,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map)
 
@@ -113,11 +114,11 @@
                     addLocationToMap(artist)
                 }
             });
+            map.panTo([37, -96])
         }
     }
 
     function addLocationToMap(artist) {
-        map.panTo([artist.location.latitude, artist.location.longitude])
         marker = new L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
         marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
     }
