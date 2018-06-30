@@ -277,7 +277,7 @@ func (sc *SpotifyController) checkSavedWithSpotify(artists <-chan dal.Artist, re
 	return notSaved
 }
 
-func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyArtists chan<- dal.Artist) <-chan dal.Artist {
+func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyArtists chan<- dal.Artist) chan dal.Artist {
 	notSavedArtists := make(chan dal.Artist)
 
 	go func() {
@@ -316,42 +316,46 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 	noSpotifyArtists := sc.checkSavedWithSpotify(artists, readyArtists)
 	notSavedArtists := sc.checkSavedByName(noSpotifyArtists, readyArtists)
 
-	artistList := []dal.Artist{}
-	readyArtistList := []dal.Artist{}
+	fullArtistList := []dal.Artist{}
 
-	artistsNeedLocation := make(chan dal.Artist)
+	newArtists := sc.lookupArtistLocations(notSavedArtists)
 
-	for notSavedArtists != nil || readyArtists != nil {
+	for newArtists != nil || readyArtists != nil {
 		select {
-		case needToSave, ok := <-notSavedArtists:
-			if !ok {
-				notSavedArtists = nil
-			} else {
-				artistsNeedLocation <- needToSave
-			}
 		case savedArtist, ok := <-readyArtists:
 			if !ok {
 				readyArtists = nil
 			} else {
-				readyArtistList = append(readyArtistList, savedArtist)
+				fullArtistList = append(fullArtistList, savedArtist)
+			}
+		case addedArtist, ok := <-newArtists:
+			if !ok {
+				newArtists = nil
+			} else {
+				fullArtistList = append(fullArtistList, addedArtist)
 			}
 		}
 	}
 
-	artistList = sc.lookupArtistLocations(artistsNeedLocation)
-
-	fullArtistList := append(artistList, readyArtistList...)
 	return fullArtistList
 }
 
-func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artist) []dal.Artist {
-	gmc := NewGoogleMapsController()
+func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artist) chan dal.Artist {
 
-	locationNormalize := make(chan dal.Artist)
-	existingLocationCheck := make(chan dal.Artist)
-	locationCoordinates := make(chan dal.Artist)
-	saveLocation := make(chan dal.Artist)
+	artistWithLocation := lookupLocation(locationLookup)
+	normalizedLocations := normalizeLocation(artistWithLocation)
 	saveArtist := make(chan dal.Artist)
+	newLocations := sc.checkIfExistingLocation(normalizedLocations, saveArtist)
+	fullLocations := getLocationCoordinates(newLocations)
+	savedLocations := sc.saveLocation(fullLocations, saveArtist)
+	savedArtists := sc.saveArtist(savedLocations)
+
+	return savedArtists
+
+}
+
+func lookupLocation(locationLookup <-chan dal.Artist) chan dal.Artist {
+	locationNormalize := make(chan dal.Artist)
 
 	go func() {
 		for a := range locationLookup {
@@ -359,9 +363,15 @@ func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artis
 			locationNormalize <- a
 		}
 		close(locationNormalize)
-
 	}()
 
+	return locationNormalize
+}
+
+func normalizeLocation(locationNormalize <-chan dal.Artist) chan dal.Artist {
+	gmc := NewGoogleMapsController()
+
+	existingLocationCheck := make(chan dal.Artist)
 	go func() {
 		for a := range locationNormalize {
 			locationPtr, err := gmc.NormalizeLocation(a.Location)
@@ -373,7 +383,11 @@ func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artis
 		}
 		close(existingLocationCheck)
 	}()
+	return existingLocationCheck
+}
 
+func (sc *SpotifyController) checkIfExistingLocation(existingLocationCheck <-chan dal.Artist, saveArtist chan dal.Artist) chan dal.Artist {
+	locationCoordinates := make(chan dal.Artist)
 	go func() {
 		for a := range existingLocationCheck {
 			var exists bool
@@ -386,7 +400,13 @@ func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artis
 		}
 		close(locationCoordinates)
 	}()
+	return locationCoordinates
+}
 
+func getLocationCoordinates(locationCoordinates <-chan dal.Artist) chan dal.Artist {
+	gmc := NewGoogleMapsController()
+
+	saveLocation := make(chan dal.Artist)
 	go func() {
 		for a := range locationCoordinates {
 			locationPtr, err := gmc.GetCoordinates(a.Location)
@@ -399,9 +419,11 @@ func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artis
 		}
 		close(saveLocation)
 	}()
+	return saveLocation
+}
 
+func (sc *SpotifyController) saveLocation(saveLocation <-chan dal.Artist, saveArtist chan dal.Artist) chan dal.Artist {
 	var err error
-
 	go func() {
 		for a := range saveLocation {
 			a.Location.ID, err = sc.locationStore.AddLocation(a.Location)
@@ -413,19 +435,25 @@ func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artis
 		close(saveArtist)
 	}()
 
-	artistList := []dal.Artist{}
+	return saveArtist
+}
 
+func (sc *SpotifyController) saveArtist(saveArtist <-chan dal.Artist) chan dal.Artist {
+	savedArtists := make(chan dal.Artist)
+
+	var err error
 	go func() {
 		for a := range saveArtist {
 			a.ID, err = sc.artistStore.AddArtist(a)
 			if err != nil {
 				log.Println(err)
 			}
-			artistList = append(artistList, a)
+			savedArtists <- a
 		}
+		close(savedArtists)
 	}()
 
-	return artistList
+	return savedArtists
 }
 
 func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
