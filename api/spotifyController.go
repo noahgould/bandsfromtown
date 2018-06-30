@@ -149,55 +149,61 @@ func (sc *SpotifyController) FindUserArtistLocations(w http.ResponseWriter, r *h
 func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 
 	//start requesting user albums
-	resultPage := makeAlbumRequest(userToken, 0)
-	artistList := []dal.Artist{}
 	artistMap := make(map[string]bool)
-	artistList = append(artistList, getArtistsFromAlbums(resultPage, artistList, artistMap)...)
-	//go through each page of user albums, getting artists from albums as we go along.
-	for numAlbums := 50; numAlbums <= resultPage.Total; numAlbums += 50 {
-		resultPage = makeAlbumRequest(userToken, numAlbums)
-		artistList = getArtistsFromAlbums(resultPage, artistList, artistMap)
-	}
 
 	artistChan := make(chan dal.Artist)
 
+	resultPage := makeAlbumRequest(userToken, 0)
+	numAlbums := len(resultPage.Albums)
 	go func() {
-		for _, a := range artistList {
-			artistChan <- a
+		//go through each page of user albums, getting artists from albums as we go along.
+		for numAlbums <= resultPage.Total {
+			getArtistsFromAlbums(resultPage, artistChan, artistMap)
+			resultPage = makeAlbumRequest(userToken, numAlbums)
+			resultPageAlbumNum := len(resultPage.Albums)
+			if resultPageAlbumNum > 0 {
+				numAlbums += resultPageAlbumNum
+			} else {
+				break
+			}
+		}
+	}()
+	log.Println("after library")
+	//start requesting playlists
+	playlistResultPage := makePlaylistRequest(userToken, 0)
+	playlists := playlistResultPage.Playlists
+	//get all the playlists.
+	for numPlaylists := 50; numPlaylists <= playlistResultPage.Total; numPlaylists += 50 {
+		playlists = append(playlists, makePlaylistRequest(userToken, numPlaylists).Playlists...)
+	}
+
+	go func() {
+		for _, playlist := range playlists {
+			trackOffset := 0
+
+			trackPage := makePlaylistTrackRequest(userToken, trackOffset, playlist)
+			for _, track := range trackPage.PlaylistTracks {
+				spotifyArtistToArtist(artistMap, artistChan, track.Track.Artists...)
+			}
+
+			for trackOffset := 100; trackOffset <= trackPage.Total; trackOffset += 100 {
+				trackPage = makePlaylistTrackRequest(userToken, trackOffset, playlist)
+				for _, track := range trackPage.PlaylistTracks {
+					spotifyArtistToArtist(artistMap, artistChan, track.Track.Artists...)
+				}
+			}
 		}
 		close(artistChan)
 	}()
+	log.Println("after playlists")
 
-	//start requesting playlists
-	// playlistResultPage := makePlaylistRequest(userToken, 0)
-	// playlists := playlistResultPage.Playlists
-	// //get all the playlists.
-	// for numPlaylists := 50; numPlaylists <= playlistResultPage.Total; numPlaylists += 50 {
-	// 	playlists = append(playlists, makePlaylistRequest(userToken, numPlaylists).Playlists...)
-	// }
-
-	// for _, playlist := range playlists {
-	// 	trackOffset := 0
-
-	// 	trackPage := makePlaylistTrackRequest(userToken, trackOffset, playlist)
-	// 	for _, track := range trackPage.PlaylistTracks {
-	// 		artistList = append(artistList, spotifyArtistToArtist(artistMap, track.Track.Artists...)...)
-	// 	}
-
-	// 	for trackOffset := 100; trackOffset <= trackPage.Total; trackOffset += 100 {
-	// 		trackPage = makePlaylistTrackRequest(userToken, trackOffset, playlist)
-	// 		for _, track := range trackPage.PlaylistTracks {
-	// 			artistList = append(artistList, spotifyArtistToArtist(artistMap, track.Track.Artists...)...)
-	// 		}
-	// 	}
-	// }
-
-	artistList = sc.getArtistLocations(artistChan)
+	artistList := sc.getArtistLocations(artistChan)
+	log.Println("after artist list got.")
 	return artistList
 }
 
-func spotifyArtistToArtist(artistMap map[string]bool, artist ...spotifySimpleArtist) []dal.Artist {
-	newArtists := []dal.Artist{}
+func spotifyArtistToArtist(artistMap map[string]bool, artistChan chan dal.Artist, artist ...spotifySimpleArtist) {
+
 	for _, a := range artist {
 		if _, ok := artistMap[a.ID]; !ok {
 			artistMap[a.ID] = true
@@ -205,10 +211,10 @@ func spotifyArtistToArtist(artistMap map[string]bool, artist ...spotifySimpleArt
 				Name:      a.Name,
 				SpotifyID: a.ID,
 			}
-			newArtists = append(newArtists, newArtist)
+			artistChan <- newArtist
 		}
 	}
-	return newArtists
+
 }
 
 // can make this more efficient by limiting results. https://beta.developer.spotify.com/documentation/web-api/reference/playlists/get-playlists-tracks/
@@ -311,6 +317,7 @@ func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyAr
 
 func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal.Artist {
 
+	log.Println("getartistLocations")
 	readyArtists := make(chan dal.Artist)
 
 	noSpotifyArtists := sc.checkSavedWithSpotify(artists, readyArtists)
@@ -342,6 +349,7 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 
 func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artist) chan dal.Artist {
 
+	log.Println("lookupArtistLocations")
 	artistWithLocation := lookupLocation(locationLookup)
 	normalizedLocations := normalizeLocation(artistWithLocation)
 	saveArtist := make(chan dal.Artist)
@@ -535,7 +543,7 @@ func makePlaylistRequest(userToken string, offset int) spotifyPlaylistPage {
 	return firstPage
 }
 
-func getArtistsFromAlbums(page spotifyAlbumPage, artistList []dal.Artist, artistMap map[string]bool) []dal.Artist {
+func getArtistsFromAlbums(page spotifyAlbumPage, artistChan chan dal.Artist, artistMap map[string]bool) {
 
 	for _, savedAlbum := range page.Albums {
 		for _, artist := range savedAlbum.Album.Artists {
@@ -545,10 +553,9 @@ func getArtistsFromAlbums(page spotifyAlbumPage, artistList []dal.Artist, artist
 					Name:      artist.Name,
 					SpotifyID: artist.ID,
 				}
-				artistList = append(artistList, *newArtist)
+				artistChan <- *newArtist
 			}
 		}
 	}
-	return artistList
 
 }
