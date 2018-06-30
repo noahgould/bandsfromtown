@@ -232,6 +232,7 @@ func searchForPage(artist string) string {
 
 	if jsonErr != nil {
 		log.Println(jsonErr)
+		log.Println(artist)
 	}
 
 	for _, title := range searchResult.PageTitles {

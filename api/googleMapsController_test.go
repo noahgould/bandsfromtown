@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"math"
 	"testing"
 
@@ -43,7 +44,10 @@ func TestNormalizeLocation(t *testing.T) {
 
 	for _, location := range table {
 
-		locationResult := gMController.NormalizeLocation(location.inputLocation)
+		locationResult, err := gMController.NormalizeLocation(location.inputLocation)
+		if err != nil {
+			log.Println(err)
+		}
 
 		if locationResult.FullLocation != location.outputlocation.FullLocation || locationResult.GooglePlaceID != location.outputlocation.GooglePlaceID {
 			t.Errorf("Location incorrect, got: %s, %s. Want: %s, %s.", locationResult.GooglePlaceID, locationResult.FullLocation, location.outputlocation.GooglePlaceID, location.outputlocation.FullLocation)
