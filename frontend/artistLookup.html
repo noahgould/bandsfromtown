@@ -82,6 +82,8 @@
 
     function showLocationUpdate() {
         var updateDiv = document.getElementById("update-div")
+
+        if (document.getElementById('newLocationAutocomplete') == null) {
         var autocompleteBox = document.createElement("input")
             autocompleteBox.type = "text"
             autocompleteBox.id = "newLocationAutocomplete"
@@ -89,8 +91,11 @@
             autocompleteBox.style.width = "60%"
             autocompleteBox.style.padding = "10px"
             autocompleteBox.style.marginLeft = "10px"
-        updateDiv.appendChild(autocompleteBox)
-        loadAutocompleteScript();
+            updateDiv.appendChild(autocompleteBox)
+            loadAutocompleteScript();
+        } else {
+            document.getElementById('newLocationAutocomplete').style.display = "inline"
+        }
     }
 
     function updateArtistLocation() {
@@ -146,7 +151,9 @@
             updateDiv = document.getElementById("update-div");
             if (updateDiv.style.display == "none") {
                 updateDiv.style.display = "inline";
-                document.getElementById('newLocationAutocomplete').value = "";
+                acBox = document.getElementById('newLocationAutocomplete')
+                acBox.value = ""
+                acBox.style.display = "none"
             }
 
         }
