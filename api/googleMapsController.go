@@ -83,6 +83,51 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) (*dal.
 	return &normalizedLocation, nil
 }
 
+func (gmc *GoogleMapsController) GeocodeLocation(location dal.Location) (dal.Location, error) {
+
+	if location.FullLocation == "nil, nil, nil" {
+		location.FullLocation = "location could not be found"
+		location.GooglePlaceID = "-1"
+		location.ID = 0
+		return location, nil
+	}
+
+	place := &maps.GeocodingRequest{
+		Address: location.FullLocation,
+	}
+
+	placeResult, err := gmc.mapsClient.Geocode(context.Background(), place)
+
+	if err != nil {
+		log.Println(err)
+
+		location.FullLocation = "location could not be found"
+		location.GooglePlaceID = "-1"
+		location.ID = 0
+
+		return location, err
+	}
+
+	for _, segment := range placeResult[0].AddressComponents {
+		for _, segmentType := range segment.Types {
+			switch segmentType {
+			case "locality":
+				location.City = segment.LongName
+			case "country":
+				location.Country = segment.LongName
+			case "administrative_area_level_1":
+				location.State = segment.LongName
+			}
+
+		}
+	}
+
+	location.Latitude = placeResult[0].Geometry.Location.Lat
+	location.Longitude = placeResult[0].Geometry.Location.Lng
+
+	return location, nil
+}
+
 func (gmc *GoogleMapsController) GetCoordinates(location dal.Location) (*dal.Location, error) {
 
 	if location.GooglePlaceID == "" || location.GooglePlaceID == "-1" {
