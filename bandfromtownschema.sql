@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `heroku_45a7f4f644be63c`.`location` (
   `google_place_id` VARCHAR(256) NULL DEFAULT NULL,
   `longitude` DOUBLE NULL,
   `latitude` DOUBLE NULL,
+  `neighborhood` VARCHAR(150) NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB
 AUTO_INCREMENT = 37
