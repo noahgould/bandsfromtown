@@ -68,7 +68,6 @@
     {{template "header" .}}
 <body>
 <div id="container">
-    <!-- <button id="whereButton" onclick="getArtists()" type="button">Where are my artists from?</button> -->
     <div id="mapid"></div>
     <div id="unknownLocations" style="display: none">
         <h1>We were unable to find a location for the following artists. Perhaps you could add it?</h1>
@@ -96,7 +95,6 @@
     }
 
     function getArtists() {
-        // document.getElementById("whereButton").style.display = "none"
         var accessToken = "{{.}}"
 
         let request = new XMLHttpRequest();
@@ -143,7 +141,6 @@
         var artistID = artistToUpdate.target.id;
         updateArtistID = artistID;
         var divForUpdateBox = artistToUpdate.target.parentNode;
-
 
         var autoCompleteExistAlready = document.getElementById("newLocationAutocomplete")
 
