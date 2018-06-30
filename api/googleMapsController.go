@@ -83,6 +83,7 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) (*dal.
 	return &normalizedLocation, nil
 }
 
+//GeocodeLocation returns a location object with long/lat coordinates as well as a normalized name, neighborhood, city, state and country.
 func (gmc *GoogleMapsController) GeocodeLocation(location dal.Location) (dal.Location, error) {
 
 	if location.FullLocation == "nil, nil, nil" {
@@ -108,6 +109,7 @@ func (gmc *GoogleMapsController) GeocodeLocation(location dal.Location) (dal.Loc
 		return location, err
 	}
 
+	var sublocality, adminLevelThree string
 	for _, segment := range placeResult[0].AddressComponents {
 		for _, segmentType := range segment.Types {
 			switch segmentType {
@@ -117,8 +119,21 @@ func (gmc *GoogleMapsController) GeocodeLocation(location dal.Location) (dal.Loc
 				location.Country = segment.LongName
 			case "administrative_area_level_1":
 				location.State = segment.LongName
+			case "neighborhood":
+				location.Neighborhood = segment.LongName
+			case "sublocality_level_1":
+				sublocality = segment.LongName
+			case "administrative_area_level_3":
+				adminLevelThree = segment.LongName
 			}
+		}
+	}
 
+	if location.Neighborhood == "" {
+		if sublocality != "" {
+			location.Neighborhood = sublocality
+		} else if adminLevelThree != "" {
+			location.Neighborhood = adminLevelThree
 		}
 	}
 
