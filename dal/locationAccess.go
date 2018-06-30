@@ -20,6 +20,7 @@ type Location struct {
 	GooglePlaceID string  `json:"google_place_id"`
 	Latitude      float64 `json:"latitude"`
 	Longitude     float64 `json:"longitude"`
+	Neighborhood  string  `json:"neighborhood"`
 }
 
 //LocationStore database access.
@@ -36,9 +37,9 @@ func NewLocationStore(db *sql.DB) LocationStore {
 func (ls *LocationStore) AddLocation(location Location) (locationID int, err error) {
 	query := `
 	INSERT location
-	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?
+	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?, neighborhood = ?
 	`
-	res, err := ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude)
+	res, err := ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude, location.Neighborhood)
 
 	if err != nil {
 		log.Fatal(err)
@@ -55,11 +56,11 @@ func (ls *LocationStore) AddLocation(location Location) (locationID int, err err
 func (ls *LocationStore) UpdateLocation(location Location) (locationID int, err error) {
 	query := `
 	UPDATE location
-	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?
+	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?, neighborhood = ?
 	WHERE id = ?
 	`
 
-	_, err = ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude, location.ID)
+	_, err = ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude, location.Neighborhood, location.ID)
 
 	if err != nil {
 		log.Print(err)
@@ -71,7 +72,7 @@ func (ls *LocationStore) UpdateLocation(location Location) (locationID int, err 
 
 func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err error) {
 	query := `
-	SELECT id, city, state, country, full_location, google_place_id, coalesce(latitude, 0), coalesce(longitude, 0) 
+	SELECT id, city, state, country, full_location, google_place_id, coalesce(latitude, 0), coalesce(longitude, 0), neighborhood 
 	FROM location
 	WHERE 
 	id = ?
@@ -82,21 +83,21 @@ func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err
 		log.Fatal(err)
 	}
 
-	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID, &location.Latitude, &location.Longitude)
+	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID, &location.Latitude, &location.Longitude, &location.Neighborhood)
 
 	return location, err
 }
 
 func (ls *LocationStore) GetLocationByGoogleID(locationID string) (location Location, err error) {
 	query := `
-	SELECT id, city, state, country, full_location, google_place_id, coalesce(latitude, 0), coalesce(longitude, 0) 
+	SELECT id, city, state, country, full_location, google_place_id, coalesce(latitude, 0), coalesce(longitude, 0), neighborhood
 	FROM location  		
 	WHERE 
 	google_place_id = ?
 	`
 	res := ls.DB.QueryRow(query, locationID)
 
-	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID, &location.Latitude, &location.Longitude)
+	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID, &location.Latitude, &location.Longitude, &location.Neighborhood)
 
 	return location, err
 }
