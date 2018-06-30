@@ -168,7 +168,7 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 			}
 		}
 	}()
-	log.Println("after library")
+
 	//start requesting playlists
 	playlistResultPage := makePlaylistRequest(userToken, 0)
 	playlists := playlistResultPage.Playlists
@@ -195,15 +195,13 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 		}
 		close(artistChan)
 	}()
-	log.Println("after playlists")
 
 	artistList := sc.getArtistLocations(artistChan)
-	log.Println("after artist list got.")
+
 	return artistList
 }
 
 func spotifyArtistToArtist(artistMap map[string]bool, artistChan chan dal.Artist, artist ...spotifySimpleArtist) {
-
 	for _, a := range artist {
 		if _, ok := artistMap[a.ID]; !ok {
 			artistMap[a.ID] = true
@@ -214,7 +212,6 @@ func spotifyArtistToArtist(artistMap map[string]bool, artistChan chan dal.Artist
 			artistChan <- newArtist
 		}
 	}
-
 }
 
 // can make this more efficient by limiting results. https://beta.developer.spotify.com/documentation/web-api/reference/playlists/get-playlists-tracks/
@@ -317,7 +314,6 @@ func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyAr
 
 func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal.Artist {
 
-	log.Println("getartistLocations")
 	readyArtists := make(chan dal.Artist)
 
 	noSpotifyArtists := sc.checkSavedWithSpotify(artists, readyArtists)
@@ -349,7 +345,6 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 
 func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artist) chan dal.Artist {
 
-	log.Println("lookupArtistLocations")
 	artistWithLocation := lookupLocation(locationLookup)
 	normalizedLocations := normalizeLocation(artistWithLocation)
 	saveArtist := make(chan dal.Artist)
