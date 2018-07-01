@@ -151,7 +151,7 @@
     function addLocationToMap(location) {
         map.panTo([location.latitude, location.longitude])
         marker = new L.marker([location.latitude, location.longitude]).addTo(map);
-        marker.bindPopup("<b>" + name +"</b><br>"+location.location_string);
+        marker.bindPopup("<b>" + name +"</b><br>" + location.location_string);
     }
 
 

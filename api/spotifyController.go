@@ -167,34 +167,35 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 				break
 			}
 		}
-	}()
-
-	//start requesting playlists
-	playlistResultPage := makePlaylistRequest(userToken, 0)
-	playlists := playlistResultPage.Playlists
-	//get all the playlists.
-	for numPlaylists := 50; numPlaylists <= playlistResultPage.Total; numPlaylists += 50 {
-		playlists = append(playlists, makePlaylistRequest(userToken, numPlaylists).Playlists...)
-	}
-
-	go func() {
-		for _, playlist := range playlists {
-			trackOffset := 0
-
-			trackPage := makePlaylistTrackRequest(userToken, trackOffset, playlist)
-			for _, track := range trackPage.PlaylistTracks {
-				spotifyArtistToArtist(artistMap, artistChan, track.Track.Artists...)
-			}
-
-			for trackOffset := 100; trackOffset <= trackPage.Total; trackOffset += 100 {
-				trackPage = makePlaylistTrackRequest(userToken, trackOffset, playlist)
-				for _, track := range trackPage.PlaylistTracks {
-					spotifyArtistToArtist(artistMap, artistChan, track.Track.Artists...)
-				}
-			}
-		}
 		close(artistChan)
 	}()
+
+	// //start requesting playlists
+	// playlistResultPage := makePlaylistRequest(userToken, 0)
+	// playlists := playlistResultPage.Playlists
+	// //get all the playlists.
+	// for numPlaylists := 50; numPlaylists <= playlistResultPage.Total; numPlaylists += 50 {
+	// 	playlists = append(playlists, makePlaylistRequest(userToken, numPlaylists).Playlists...)
+	// }
+
+	// go func() {
+	// 	for _, playlist := range playlists {
+	// 		trackOffset := 0
+
+	// 		trackPage := makePlaylistTrackRequest(userToken, trackOffset, playlist)
+	// 		for _, track := range trackPage.PlaylistTracks {
+	// 			spotifyArtistToArtist(artistMap, artistChan, track.Track.Artists...)
+	// 		}
+
+	// 		for trackOffset := 100; trackOffset <= trackPage.Total; trackOffset += 100 {
+	// 			trackPage = makePlaylistTrackRequest(userToken, trackOffset, playlist)
+	// 			for _, track := range trackPage.PlaylistTracks {
+	// 				spotifyArtistToArtist(artistMap, artistChan, track.Track.Artists...)
+	// 			}
+	// 		}
+	// 	}
+	// 	close(artistChan)
+	// }()
 
 	artistList := sc.getArtistLocations(artistChan)
 
@@ -349,8 +350,7 @@ func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artis
 	normalizedLocations := normalizeLocation(artistWithLocation)
 	saveArtist := make(chan dal.Artist)
 	newLocations := sc.checkIfExistingLocation(normalizedLocations, saveArtist)
-	fullLocations := getLocationCoordinates(newLocations)
-	savedLocations := sc.saveLocation(fullLocations, saveArtist)
+	savedLocations := sc.saveLocation(newLocations, saveArtist)
 	savedArtists := sc.saveArtist(savedLocations)
 
 	return savedArtists
@@ -377,11 +377,11 @@ func normalizeLocation(locationNormalize <-chan dal.Artist) chan dal.Artist {
 	existingLocationCheck := make(chan dal.Artist)
 	go func() {
 		for a := range locationNormalize {
-			locationPtr, err := gmc.NormalizeLocation(a.Location)
+			artistLocation, err := gmc.GeocodeLocation(a.Location)
 			if err != nil {
 				log.Println(err)
 			}
-			a.Location = *locationPtr
+			a.Location = artistLocation
 			existingLocationCheck <- a
 		}
 		close(existingLocationCheck)
@@ -390,34 +390,15 @@ func normalizeLocation(locationNormalize <-chan dal.Artist) chan dal.Artist {
 }
 
 func (sc *SpotifyController) checkIfExistingLocation(existingLocationCheck <-chan dal.Artist, saveArtist chan dal.Artist) chan dal.Artist {
-	locationCoordinates := make(chan dal.Artist)
+	saveLocation := make(chan dal.Artist)
 	go func() {
 		for a := range existingLocationCheck {
 			var exists bool
 			exists, a.Location = sc.locationStore.CheckForExistingLocation(a.Location)
 			if !exists {
-				locationCoordinates <- a
+				saveLocation <- a
 			} else {
 				saveArtist <- a
-			}
-		}
-		close(locationCoordinates)
-	}()
-	return locationCoordinates
-}
-
-func getLocationCoordinates(locationCoordinates <-chan dal.Artist) chan dal.Artist {
-	gmc := NewGoogleMapsController()
-
-	saveLocation := make(chan dal.Artist)
-	go func() {
-		for a := range locationCoordinates {
-			locationPtr, err := gmc.GetCoordinates(a.Location)
-			if err != nil {
-				log.Println(err)
-			} else {
-				a.Location = *locationPtr
-				saveLocation <- a
 			}
 		}
 		close(saveLocation)
