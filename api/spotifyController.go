@@ -176,7 +176,7 @@ func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
 	for numPlaylists := 50; numPlaylists <= playlistResultPage.Total; numPlaylists += 50 {
 		playlists = append(playlists, makePlaylistRequest(userToken, numPlaylists).Playlists...)
 	}
-
+	requestEnd := time.Now()
 	go func() {
 		for _, playlist := range playlists {
 			trackOffset := 0
