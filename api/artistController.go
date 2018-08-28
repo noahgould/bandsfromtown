@@ -103,7 +103,7 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 				log.Println(err)
 			}
 		} else {
-			t, err := template.ParseFiles("./frontend/artistLookup.html")
+			t, err := template.ParseFiles("./frontend/artistLookup.html", "./frontend/header.html")
 			if err != nil {
 				log.Print("template parsing error: ", err)
 			}

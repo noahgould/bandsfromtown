@@ -1,17 +1,11 @@
 <!DOCTYPE html>
 <style>
 
-    html { 
-        background: url(assets/worldMap.jpg) no-repeat center center fixed; 
-        -webkit-background-size: cover;
-        -moz-background-size: cover;
-        -o-background-size: cover;
-        background-size: cover;
-    }
-
     html, body {
         height:100%;
         font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0px;
+        background-color: #9AAAD1;
     }
 
     .header {
@@ -34,6 +28,8 @@
         justify-content: center;
         align-items:center;
         text-align:center;
+        margin: 5px;
+        color: #2C196B;
     }
 
     #spotifyLogin {
@@ -46,16 +42,22 @@
         text-decoration: none;
     }
 
+    #artistInput {
+        font-size: 24pt;
+        text-align: center;
+        color: #2C196B;
+    }
+
 </style>
 <head></head>
 <html>
+        {{template "header" .}}
 <body>
-<div class=header id=landingHeader>bandsFromTown</div>
 <div class=landingPage>
     <div class=landingColumn id=singleArtistColumn>
         <div class=columnContent>
             <h1>Look up your favorite Artist</h1>
-            <input type="text" id="artistInput" name="artistname" style="font-size: 24pt" >
+            <input type="text" id="artistInput" name="artistname">
         </div>
     </div>
     <div class=landingColumn id=spotifyColumn>
@@ -65,7 +67,6 @@
                 Login to Spotify</a>        
             </div>
     </div>
-
 </div>
 <script>
         document.getElementById("artistInput")

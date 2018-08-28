@@ -126,7 +126,7 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 }
 
 func render(w http.ResponseWriter, tmpl string, arg string) {
-	t, err := template.ParseFiles(tmpl)
+	t, err := template.ParseFiles(tmpl, "./frontend/header.html")
 	if err != nil {
 		log.Print("template parsing error: ", err)
 	}

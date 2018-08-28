@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <style>
-    div {
-        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+    html, body {
+        height:100%;
+        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0px;
+        background-color: #9AAAD1;
     }
 
     #container{
@@ -11,14 +14,14 @@
     }
 
     #container > div {
-        flex: 1;
-        height: 100%;
+        flex: 2;
+        margin: 5px;
     }
 
     .artistWithNoLocation {
-        border: 2px solid blue;
-        background-color: white;
-        color: black;
+        border: 2px solid #4C9497;
+        background-color: #4C9497;
+        color: #4C378C;
         padding: 10px;
         font-size: 16px;
         cursor: pointer;
@@ -34,6 +37,22 @@
         text-decoration: none;
         margin: auto;
     }
+
+    #mapid {
+        height: 700px;
+        flex-basis: 80%;
+        margin-left: 0px;
+        margin-right: 0px;
+        display: flex
+    }
+
+    #unknownLocations {
+        flex-basis: 20%;
+    }
+
+    h1 {
+        color: #2C196B;
+    }
     
 
 </style>
@@ -46,11 +65,11 @@
     crossorigin=""></script>
 </head>
 <html>
+    {{template "header" .}}
 <body>
 <div id="container">
-    <button id="whereButton" onclick="getArtists()" type="button">Where are my artists from?</button>
-    <div id="mapid" style="height:800px"></div>
-    <div id="unknownLocations" style="display:none">
+    <div id="mapid"></div>
+    <div id="unknownLocations" style="display: none">
         <h1>We were unable to find a location for the following artists. Perhaps you could add it?</h1>
     </div>
 </div>
@@ -68,12 +87,14 @@
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
+            zoom:5,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map)
+
+        getArtists();
     }
 
     function getArtists() {
-        document.getElementById("whereButton").style.display = "none"
         var accessToken = "{{.}}"
 
         let request = new XMLHttpRequest();
@@ -91,13 +112,13 @@
                     addLocationToMap(artist)
                 }
             });
+            map.panTo([37, -96])
         }
     }
 
     function addLocationToMap(artist) {
-                map.panTo([artist.location.latitude, artist.location.longitude])
-                marker = new L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
+        marker = new L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
+        marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
     }
 
     function addUnknownLocation(artist) {
@@ -120,7 +141,6 @@
         var artistID = artistToUpdate.target.id;
         updateArtistID = artistID;
         var divForUpdateBox = artistToUpdate.target.parentNode;
-
 
         var autoCompleteExistAlready = document.getElementById("newLocationAutocomplete")
 
