@@ -24,6 +24,12 @@ type SpotifyController struct {
 
 const redirectURI string = "http://localhost:8080/spotify/login/"
 
+//ArtistByLocation  Artists grouped by location, for viewing in map.
+type ArtistByLocation = struct {
+	Location dal.Location `json:"location"`
+	Artists  []dal.Artist `json:"artists"`
+}
+
 func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.LocationStore) *SpotifyController {
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -101,7 +107,7 @@ func (sc *SpotifyController) FindUserArtistLocations(w http.ResponseWriter, r *h
 	}
 }
 
-func (sc *SpotifyController) getAllUserArtists(userToken string) []dal.Artist {
+func (sc *SpotifyController) getAllUserArtists(userToken string) []ArtistByLocation {
 
 	//start requesting user albums
 	artistMap := make(map[string]bool)
@@ -227,14 +233,14 @@ func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyAr
 	return notSavedArtists
 }
 
-func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal.Artist {
+func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []ArtistByLocation {
 
 	readyArtists := make(chan dal.Artist)
 
 	noSpotifyArtists := sc.checkSavedWithSpotify(artists, readyArtists)
 	notSavedArtists := sc.checkSavedByName(noSpotifyArtists, readyArtists)
 
-	fullArtistList := []dal.Artist{}
+	artistsGroupedByLocation := make(map[int]*ArtistByLocation)
 
 	newArtists := sc.lookupArtistLocations(notSavedArtists)
 
@@ -244,18 +250,31 @@ func (sc *SpotifyController) getArtistLocations(artists <-chan dal.Artist) []dal
 			if !ok {
 				readyArtists = nil
 			} else {
-				fullArtistList = append(fullArtistList, savedArtist)
+				addToArtistLocationMap(savedArtist, artistsGroupedByLocation)
 			}
 		case addedArtist, ok := <-newArtists:
 			if !ok {
 				newArtists = nil
 			} else {
-				fullArtistList = append(fullArtistList, addedArtist)
+				addToArtistLocationMap(addedArtist, artistsGroupedByLocation)
 			}
 		}
 	}
 
-	return fullArtistList
+	artistsByLoc := []ArtistByLocation{}
+	for _, a := range artistsGroupedByLocation {
+		artistsByLoc = append(artistsByLoc, *a)
+	}
+
+	return artistsByLoc
+}
+
+func addToArtistLocationMap(artist dal.Artist, artistLocationMap map[int]*ArtistByLocation) {
+	if _, ok := artistLocationMap[artist.Location.ID]; !ok {
+		artistLocationMap[artist.Location.ID] = &ArtistByLocation{Location: artist.Location, Artists: []dal.Artist{artist}}
+	} else {
+		artistLocationMap[artist.Location.ID].Artists = append(artistLocationMap[artist.Location.ID].Artists, artist)
+	}
 }
 
 func (sc *SpotifyController) lookupArtistLocations(locationLookup chan dal.Artist) chan dal.Artist {
