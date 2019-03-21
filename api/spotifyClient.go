@@ -56,11 +56,11 @@ func (sc *SpotifyClient) startSpotifySession(authCode string) spotifyTokenRespon
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Content-Length", strconv.Itoa(len(form.Encode())))
 
-	spotifyClient := &http.Client{
+	spotifyHttpClient := &http.Client{
 		Timeout: time.Second * 5,
 	}
 
-	response, err := spotifyClient.Do(req)
+	response, err := spotifyHttpClient.Do(req)
 
 	if err != nil {
 		log.Println(err)
@@ -84,7 +84,7 @@ func (sc *SpotifyClient) startSpotifySession(authCode string) spotifyTokenRespon
 
 func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
 
-	spotifyClient := &http.Client{
+	spotifyHttpClient := &http.Client{
 		Timeout: time.Second * 20,
 	}
 
@@ -98,7 +98,7 @@ func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
 
 	req.URL.RawQuery = q.Encode()
 
-	response, err := spotifyClient.Do(req)
+	response, err := spotifyHttpClient.Do(req)
 
 	if err != nil {
 		log.Println(err)
@@ -123,7 +123,7 @@ func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
 }
 
 func makePlaylistRequest(userToken string, offset int) spotifyPlaylistPage {
-	spotifyClient := &http.Client{
+	spotifyHttpClient := &http.Client{
 		Timeout: time.Second * 5,
 	}
 
@@ -137,7 +137,7 @@ func makePlaylistRequest(userToken string, offset int) spotifyPlaylistPage {
 
 	req.URL.RawQuery = q.Encode()
 
-	response, err := spotifyClient.Do(req)
+	response, err := spotifyHttpClient.Do(req)
 
 	if err != nil {
 		log.Println(err)
@@ -164,7 +164,7 @@ func makePlaylistRequest(userToken string, offset int) spotifyPlaylistPage {
 // can make this more efficient by limiting results. https://beta.developer.spotify.com/documentation/web-api/reference/playlists/get-playlists-tracks/
 func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimplePlaylist) spotifyTrackPage {
 
-	spotifyClient := &http.Client{
+	spotifyHttpClient := &http.Client{
 		Timeout: time.Second * 5,
 	}
 	requestURL := fmt.Sprintf("https://api.spotify.com/v1/users/%s/playlists/%s/tracks", playlist.Owner.ID, playlist.ID)
@@ -178,7 +178,7 @@ func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimp
 
 	req.URL.RawQuery = q.Encode()
 
-	response, err := spotifyClient.Do(req)
+	response, err := spotifyHttpClient.Do(req)
 
 	if err != nil {
 		log.Println(err)

@@ -16,7 +16,6 @@ import (
 
 type SpotifyController struct {
 	clientID      string
-	clientSecret  string
 	redirectURI   string
 	artistStore   dal.ArtistStore
 	locationStore dal.LocationStore
@@ -30,16 +29,14 @@ func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.L
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	clientID, clientEnvExist := os.LookupEnv("SPOTIFY_ID")
-	clientSecret, clientSecretEnvExist := os.LookupEnv("SPOTIFY_SECRET")
-	if !clientEnvExist || !clientSecretEnvExist {
-		log.Fatal("spotify client id or secret not stored in environment variables.")
+	if !clientEnvExist {
+		log.Fatal("spotify client id not stored in environment variables.")
 	}
 
 	newSpotifyClient := NewSpotifyClient()
 
 	return &SpotifyController{
 		clientID:      clientID,
-		clientSecret:  clientSecret,
 		redirectURI:   redirectURI,
 		artistStore:   newArtistStore,
 		locationStore: newLocationStore,
@@ -51,7 +48,7 @@ func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http
 
 	authUrl, err := url.Parse("https://accounts.spotify.com/authorize")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	q := authUrl.Query()
