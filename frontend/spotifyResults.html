@@ -84,36 +84,44 @@
         request.onload = function () {
             var response = JSON.parse(request.responseText);
 
-            response.forEach(function(artist) {
-                if (artist.location.google_place_id === "-1") {
-                    addUnknownLocation(artist)
+            response.forEach(function(locationGroup) {
+                if (locationGroup.location.google_place_id === "-1") {
+                    addUnknownLocation(locationGroup)
                 } else {
-                    addLocationToMap(artist)
+                    addLocationToMap(locationGroup)
                 }
             });
         }
     }
 
-    function addLocationToMap(artist) {
-                map.panTo([artist.location.latitude, artist.location.longitude])
-                marker = new L.marker([artist.location.latitude, artist.location.longitude]).addTo(map);
-                marker.bindPopup("<b>" + artist.name +"</b><br>"+artist.location.location_string);
+    function addLocationToMap(locationGroup) {
+        var lat = locationGroup.location.latitude
+        var lng =  locationGroup.location.longitude
+        map.panTo([lat, lng])
+        marker = new L.marker([lat, lng]).addTo(map);
+        var artistNames = ""
+        locationGroup.artists.forEach(function(artist) {
+            artistNames += artist.name +"</br>"
+        });
+        marker.bindPopup("<b>" + locationGroup.location.location_string +"</b><br>" + artistNames );
     }
 
-    function addUnknownLocation(artist) {
+    function addUnknownLocation(locationGroup) {
         unknownDiv = document.getElementById("unknownLocations")
         if (unknownDiv.style.display == "none") { unknownDiv.style.display = "block"};
-        newArtist = document.createElement("div")
-        newArtist.style.width = "100%"
-        newArtist.style.margin = "10px"
-        newArtistName = document.createElement("button")
-        newArtistName.appendChild(document.createTextNode(artist.name))
-        newArtistName.id = artist.id
-        newArtistName.classList.add('artistWithNoLocation');
-        newArtistName.addEventListener('click', artistChosen, false);
-        newArtist.appendChild(newArtistName)
+        locationGroup.artists.forEach(function(artist) {
+            newArtist = document.createElement("div")
+            newArtist.style.width = "100%"
+            newArtist.style.margin = "10px"
+            newArtistName = document.createElement("button")
+            newArtistName.appendChild(document.createTextNode(artist.name))
+            newArtistName.id = artist.id
+            newArtistName.classList.add('artistWithNoLocation');
+            newArtistName.addEventListener('click', artistChosen, false);
+            newArtist.appendChild(newArtistName)
 
-        unknownDiv.appendChild(newArtist);
+            unknownDiv.appendChild(newArtist);
+        });
     }
 
     var artistChosen = function(artistToUpdate) {
