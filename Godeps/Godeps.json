@@ -5,8 +5,8 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/go-sql-driver/mysql",
-			"Comment": "v1.3-59-g1a676ac",
-			"Rev": "1a676ac6e4dce68e9303a1800773861350374a9e"
+			"Comment": "v1.4.0-21-gc0f6b44",
+			"Rev": "c0f6b444ad8f92ecd68f86b27635c1fccdede4c4"
 		},
 		{
 			"ImportPath": "github.com/gorilla/mux",
