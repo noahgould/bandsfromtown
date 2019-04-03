@@ -2,18 +2,12 @@ package api
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 
@@ -22,10 +16,10 @@ import (
 
 type SpotifyController struct {
 	clientID      string
-	clientSecret  string
 	redirectURI   string
 	artistStore   dal.ArtistStore
 	locationStore dal.LocationStore
+	spotifyClient *SpotifyClient
 }
 
 const redirectURI string = "http://localhost:8080/spotify/login/"
@@ -35,36 +29,37 @@ func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.L
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	clientID, clientEnvExist := os.LookupEnv("SPOTIFY_ID")
-	clientSecret, clientSecretEnvExist := os.LookupEnv("SPOTIFY_SECRET")
-	if !clientEnvExist || !clientSecretEnvExist {
-		log.Fatal("spotify client id or secret not stored in environment variables.")
+	if !clientEnvExist {
+		log.Fatal("spotify client id not stored in environment variables.")
 	}
+
+	newSpotifyClient := NewSpotifyClient()
 
 	return &SpotifyController{
 		clientID:      clientID,
-		clientSecret:  clientSecret,
 		redirectURI:   redirectURI,
 		artistStore:   newArtistStore,
 		locationStore: newLocationStore,
+		spotifyClient: newSpotifyClient,
 	}
 }
 
 func (sc *SpotifyController) AuthorizationRequest(w http.ResponseWriter, r *http.Request) {
 
-	u, err := url.Parse("https://accounts.spotify.com/authorize")
+	authUrl, err := url.Parse("https://accounts.spotify.com/authorize")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
-	q := u.Query()
+	q := authUrl.Query()
 	q.Add("client_id", sc.clientID)
 	q.Add("response_type", "code")
 	q.Add("redirect_uri", sc.redirectURI)
 	q.Add("scope", "user-library-read playlist-read-collaborative playlist-read-private")
 
-	u.RawQuery = q.Encode()
+	authUrl.RawQuery = q.Encode()
 
-	http.Redirect(w, r, u.String(), http.StatusPermanentRedirect)
+	http.Redirect(w, r, authUrl.String(), http.StatusPermanentRedirect)
 }
 
 func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *http.Request) {
@@ -81,48 +76,8 @@ func (sc *SpotifyController) AuthorizationCallback(w http.ResponseWriter, r *htt
 		log.Println("More than 1 authcode.")
 	}
 
-	form := url.Values{}
-	form.Add("grant_type", "authorization_code")
-	form.Add("code", authCode[0])
-	form.Add("redirect_uri", sc.redirectURI)
-
-	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(form.Encode()))
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	headerString := base64.StdEncoding.EncodeToString([]byte(sc.clientID + ":" + sc.clientSecret))
-	headerString = strings.Join([]string{"Basic", headerString}, " ")
-	req.Header.Add("Authorization", headerString)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Content-Length", strconv.Itoa(len(form.Encode())))
-
-	spotifyClient := &http.Client{
-		Timeout: time.Second * 5,
-	}
-
-	response, err := spotifyClient.Do(req)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	body, readErr := ioutil.ReadAll(response.Body)
-	if readErr != nil {
-		log.Println(readErr)
-	}
-
-	tokenResult := spotifyTokenResponse{}
-
-	err = json.Unmarshal(body, &tokenResult)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	render(w, "./frontend/spotifyResults.html", tokenResult.AccessToken)
-
+	tokenResponse := sc.spotifyClient.startSpotifySession(authCode[0])
+	render(w, "./frontend/spotifyResults.html", tokenResponse.AccessToken)
 }
 
 func render(w http.ResponseWriter, tmpl string, arg string) {
@@ -212,46 +167,6 @@ func spotifyArtistToArtist(artistMap map[string]bool, artistChan chan dal.Artist
 			artistChan <- newArtist
 		}
 	}
-}
-
-// can make this more efficient by limiting results. https://beta.developer.spotify.com/documentation/web-api/reference/playlists/get-playlists-tracks/
-func makePlaylistTrackRequest(userToken string, offset int, playlist spotifySimplePlaylist) spotifyTrackPage {
-
-	spotifyClient := &http.Client{
-		Timeout: time.Second * 5,
-	}
-	requestURL := fmt.Sprintf("https://api.spotify.com/v1/users/%s/playlists/%s/tracks", playlist.Owner.ID, playlist.ID)
-
-	req, err := http.NewRequest("GET", requestURL, nil)
-	req.Header.Add("Authorization", "Bearer "+userToken)
-
-	q := req.URL.Query()
-	q.Add("limit", "100")
-	q.Add("offset", strconv.Itoa(offset))
-
-	req.URL.RawQuery = q.Encode()
-
-	response, err := spotifyClient.Do(req)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	firstPage := spotifyTrackPage{}
-
-	if response.StatusCode == 200 {
-		body, readErr := ioutil.ReadAll(response.Body)
-		if readErr != nil {
-			log.Println(readErr)
-		}
-		jsonErr := json.Unmarshal(body, &firstPage)
-
-		if jsonErr != nil {
-			log.Println(jsonErr)
-		}
-	}
-
-	return firstPage
 }
 
 func (sc *SpotifyController) checkSavedWithSpotify(artists <-chan dal.Artist, readyArtists chan<- dal.Artist) <-chan dal.Artist {
@@ -457,85 +372,6 @@ func (sc *SpotifyController) saveArtist(saveArtist <-chan dal.Artist) chan dal.A
 	}()
 
 	return savedArtists
-}
-
-func makeAlbumRequest(userToken string, offset int) spotifyAlbumPage {
-
-	spotifyClient := &http.Client{
-		Timeout: time.Second * 20,
-	}
-
-	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me/albums", nil)
-
-	req.Header.Add("Authorization", "Bearer "+userToken)
-
-	q := req.URL.Query()
-	q.Add("limit", "50")
-	q.Add("offset", strconv.Itoa(offset))
-
-	req.URL.RawQuery = q.Encode()
-
-	response, err := spotifyClient.Do(req)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	firstPage := spotifyAlbumPage{}
-
-	if response.StatusCode == 200 {
-		body, readErr := ioutil.ReadAll(response.Body)
-		if readErr != nil {
-			log.Println(readErr)
-		}
-
-		jsonErr := json.Unmarshal(body, &firstPage)
-
-		if jsonErr != nil {
-			log.Println(jsonErr)
-		}
-	}
-
-	return firstPage
-}
-
-func makePlaylistRequest(userToken string, offset int) spotifyPlaylistPage {
-	spotifyClient := &http.Client{
-		Timeout: time.Second * 5,
-	}
-
-	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/me/playlists", nil)
-
-	req.Header.Add("Authorization", "Bearer "+userToken)
-
-	q := req.URL.Query()
-	q.Add("limit", "50")
-	q.Add("offset", strconv.Itoa(offset))
-
-	req.URL.RawQuery = q.Encode()
-
-	response, err := spotifyClient.Do(req)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	firstPage := spotifyPlaylistPage{}
-
-	if response.StatusCode == 200 {
-		body, readErr := ioutil.ReadAll(response.Body)
-		if readErr != nil {
-			log.Println(readErr)
-		}
-
-		jsonErr := json.Unmarshal(body, &firstPage)
-
-		if jsonErr != nil {
-			log.Println(jsonErr)
-		}
-	}
-
-	return firstPage
 }
 
 func getArtistsFromAlbums(page spotifyAlbumPage, artistChan chan dal.Artist, artistMap map[string]bool) {
