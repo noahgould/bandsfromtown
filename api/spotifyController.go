@@ -22,8 +22,6 @@ type SpotifyController struct {
 	spotifyClient *SpotifyClient
 }
 
-const redirectURI string = "http://localhost:8080/spotify/login/"
-
 //ArtistByLocation  Artists grouped by location, for viewing in map.
 type ArtistByLocation = struct {
 	Location dal.Location `json:"location"`
@@ -35,15 +33,19 @@ func NewSpotifyController(newArtistStore dal.ArtistStore, newLocationStore dal.L
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	clientID, clientEnvExist := os.LookupEnv("SPOTIFY_ID")
+	redirectURL, redirectURLEnvExist := os.LookupEnv("SPOTIFY_REDIRECT_URL")
 	if !clientEnvExist {
 		log.Fatal("spotify client id not stored in environment variables.")
+	}
+	if !redirectURLEnvExist {
+		log.Fatal("spotify redirect url not stored in environment variables.")
 	}
 
 	newSpotifyClient := NewSpotifyClient()
 
 	return &SpotifyController{
 		clientID:      clientID,
-		redirectURI:   redirectURI,
+		redirectURI:   redirectURL,
 		artistStore:   newArtistStore,
 		locationStore: newLocationStore,
 		spotifyClient: newSpotifyClient,
