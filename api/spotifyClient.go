@@ -40,7 +40,6 @@ func NewSpotifyClient() *SpotifyClient {
 	return &SpotifyClient{
 		clientID:     clientID,
 		clientSecret: clientSecret,
-		redirectURL:  redirectURL,
 	}
 }
 
