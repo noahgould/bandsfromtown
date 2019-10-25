@@ -36,10 +36,6 @@ func (ls *LocationStore) AddLocation(location Location) (locationID int, err err
 
 	var locationId int
 
-	// query := `
-	// INSERT location
-	// SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?
-	// `
 	query := `
 	INSERT into bands_from_town.location ( City, State, Country, full_location, google_place_id, latitude, longitude)
 	values ($1, $2, $3, $4, $5, $6, $7) returning id;`
@@ -51,11 +47,6 @@ func (ls *LocationStore) AddLocation(location Location) (locationID int, err err
 	if err != nil {
 		log.Print(err)
 	}
-
-	// id, err := res.LastInsertId()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
 
 	return locationId, err
 }

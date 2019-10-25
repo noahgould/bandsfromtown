@@ -37,11 +37,6 @@ func (as *AlbumStore) addAlbums(albums []Album) (newAlbums []Album) {
 }
 
 func (as *AlbumStore) addAlbum(album Album) (albumID int, err error) {
-	// query := `
-	// INSERT album
-	// SET title = ,? artist_id = ?, release_date = ?
-	// `
-	// res, err := as.DB.Exec(query, album)
 
 	query := `INSERT into album (title, artist_id, release_date)
 	values ($1, $2, $3) returning id;`
@@ -62,7 +57,7 @@ func (as *AlbumStore) GetAlbumsByArtistID(artistID int) (a []Album, err error) {
 		FROM 
 			album
 		WHERE
-			artist_id  = ?
+			artist_id  = $1
 	`
 	rows, err := as.DB.Query(context.Background(), query, artistID)
 

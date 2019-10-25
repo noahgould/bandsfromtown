@@ -35,12 +35,6 @@ func (as *ArtistStore) AddArtist(artist Artist) (artistID int, err error) {
 		artist.SpotifyID = "-1"
 	}
 
-	// query := `
-	// INSERT artist
-	// SET name = ?, hometown = ?, genre = ?, spotify_id = ?, wikipedia_url = ?
-	// `
-	// res, err := as.DB.Exec(query, artist.Name, artist.Location.ID, artist.Genre, artist.SpotifyID, artist.WikipediaURL)
-
 	query := `INSERT INTO bands_from_town.artist (name, hometown, genre, spotify_id, wikipedia_url)
 		values ($1, $2, $3, $4, $5) returning id;`
 
@@ -64,7 +58,7 @@ func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 	query := `
 		SELECT * FROM artist
 		WHERE 
-		id = ?
+		id = $1
 	`
 
 	res := as.DB.QueryRow(context.Background(), query, artistID)
@@ -87,7 +81,7 @@ func (as *ArtistStore) GetArtistBySpotifyID(spotifyID string) (artist Artist, er
 	query := `
 		SELECT * FROM bands_from_town.artist
 		WHERE 
-		spotify_id = ?`
+		spotify_id = $1`
 
 	res := as.DB.QueryRow(context.Background(), query, spotifyID)
 
@@ -132,8 +126,8 @@ func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, er
 //UpdateArtist updates an existing artist.
 func (as *ArtistStore) UpdateArtist(artist Artist) (artistId int, err error) {
 	query := `UPDATE bands_from_town.artist
-		SET name = ?, hometown = ?, genre = ?, spotify_id = ?, wikipedia_url = ?
-		WHERE id = ?`
+		SET name = $1, hometown = $2, genre = $3, spotify_id = $4, wikipedia_url = $5
+		WHERE id = $6`
 
 	_, err = as.DB.Exec(context.Background(), query, artist.Name, artist.Location.ID, artist.Genre, artist.SpotifyID, artist.WikipediaURL, artist.ID)
 
