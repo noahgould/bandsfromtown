@@ -15,3 +15,6 @@
 
 # Environment files.
 *.env
+
+.vscode/
+bandsfromtown
