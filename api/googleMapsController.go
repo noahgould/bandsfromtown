@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/noahgould/bandsfromtown/dal"
@@ -15,7 +16,8 @@ type GoogleMapsController struct {
 }
 
 func NewGoogleMapsController() *GoogleMapsController {
-	c, err := maps.NewClient(maps.WithAPIKey("AIzaSyA8oJVjkQZenxQIvA0EMXBAomiYjJwEqRE"))
+	gmapsAPIKey := os.Getenv("GMAPS_API_KEY")
+	c, err := maps.NewClient(maps.WithAPIKey(gmapsAPIKey))
 	if err != nil {
 		log.Fatal(err)
 	}
