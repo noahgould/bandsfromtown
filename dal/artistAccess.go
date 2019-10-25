@@ -64,7 +64,7 @@ func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 	query := `
 		SELECT * FROM artist
 		WHERE 
-		id = ?
+		id = $1
 	`
 
 	res := as.DB.QueryRow(context.Background(), query, artistID)
@@ -87,7 +87,7 @@ func (as *ArtistStore) GetArtistBySpotifyID(spotifyID string) (artist Artist, er
 	query := `
 		SELECT * FROM bands_from_town.artist
 		WHERE 
-		spotify_id = ?`
+		spotify_id = $1`
 
 	res := as.DB.QueryRow(context.Background(), query, spotifyID)
 
