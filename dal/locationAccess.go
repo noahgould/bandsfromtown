@@ -3,11 +3,10 @@ package dal
 import (
 
 	//mysql driver
+	"context"
 	"log"
 
-	_ "github.com/go-sql-driver/mysql"
-
-	"database/sql"
+	"github.com/jackc/pgx/v4"
 )
 
 //Location of an artist or band.
@@ -24,42 +23,50 @@ type Location struct {
 
 //LocationStore database access.
 type LocationStore struct {
-	DB *sql.DB
+	DB *pgx.Conn
 }
 
 //NewLocationStore returns a new connection to an Location store
-func NewLocationStore(db *sql.DB) LocationStore {
+func NewLocationStore(db *pgx.Conn) LocationStore {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	return LocationStore{DB: db}
 }
 
 func (ls *LocationStore) AddLocation(location Location) (locationID int, err error) {
+
+	var locationId int
+
+	// query := `
+	// INSERT location
+	// SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?
+	// `
 	query := `
-	INSERT location
-	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?
-	`
-	res, err := ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude)
+	INSERT into bands_from_town.location ( City, State, Country, full_location, google_place_id, latitude, longitude)
+	values ($1, $2, $3, $4, $5, $6, $7) returning id;`
+
+	// res, err := ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude)
+
+	err = ls.DB.QueryRow(context.Background(), query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude).Scan(&locationId)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		log.Fatal(err)
-	}
-	location.ID = int(id)
 
-	return location.ID, nil
+	// id, err := res.LastInsertId()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	return locationId, err
 }
 
 func (ls *LocationStore) UpdateLocation(location Location) (locationID int, err error) {
 	query := `
-	UPDATE location
-	SET City = ?, State = ?, Country = ?, full_location = ?, google_place_id = ?, latitude = ?, longitude = ?
-	WHERE id = ?
-	`
+	UPDATE bands_from_town.location
+	SET City = $1, State = $2, Country = $3, full_location = $4, google_place_id = $5, latitude = $6, longitude = $7
+	WHERE id = $8`
 
-	_, err = ls.DB.Exec(query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude, location.ID)
+	_, err = ls.DB.Exec(context.Background(), query, location.City, location.State, location.Country, location.FullLocation, location.GooglePlaceID, location.Latitude, location.Longitude, location.ID)
 
 	if err != nil {
 		log.Print(err)
@@ -72,11 +79,11 @@ func (ls *LocationStore) UpdateLocation(location Location) (locationID int, err 
 func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err error) {
 	query := `
 	SELECT id, city, state, country, full_location, google_place_id, coalesce(latitude, 0), coalesce(longitude, 0) 
-	FROM location
+	FROM bands_from_town.location
 	WHERE 
-	id = ?
-	`
-	res := ls.DB.QueryRow(query, locationID)
+	id = $1`
+
+	res := ls.DB.QueryRow(context.Background(), query, locationID)
 
 	if err != nil {
 		log.Fatal(err)
@@ -90,11 +97,11 @@ func (ls *LocationStore) GetLocationByID(locationID int) (location Location, err
 func (ls *LocationStore) GetLocationByGoogleID(locationID string) (location Location, err error) {
 	query := `
 	SELECT id, city, state, country, full_location, google_place_id, coalesce(latitude, 0), coalesce(longitude, 0) 
-	FROM location  		
+	FROM bands_from_town.location  		
 	WHERE 
-	google_place_id = ?
+	google_place_id = $1
 	`
-	res := ls.DB.QueryRow(query, locationID)
+	res := ls.DB.QueryRow(context.Background(), query, locationID)
 
 	err = res.Scan(&location.ID, &location.City, &location.State, &location.Country, &location.FullLocation, &location.GooglePlaceID, &location.Latitude, &location.Longitude)
 
@@ -103,11 +110,11 @@ func (ls *LocationStore) GetLocationByGoogleID(locationID string) (location Loca
 
 func (ls *LocationStore) GetArtistsByLocationID(locationID int) (artists []Artist, err error) {
 	query := `
-		SELECT * FROM artist
+		SELECT * FROM bands_from_town.artist
 		WHERE 
-		hometown = ?
+		hometown = $1
 	`
-	rows, err := ls.DB.Query(query, locationID)
+	rows, err := ls.DB.Query(context.Background(), query, locationID)
 
 	if err != nil {
 		log.Fatal(err)
@@ -134,7 +141,7 @@ func (ls *LocationStore) CheckForExistingLocation(locationToCheck Location) (boo
 	existingLocation, err := ls.GetLocationByGoogleID(locationToCheck.GooglePlaceID)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return false, locationToCheck
 		}
 
