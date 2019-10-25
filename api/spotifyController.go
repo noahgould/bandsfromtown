@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
 	"html/template"
 	"log"
@@ -10,6 +9,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx"
 
 	"github.com/noahgould/bandsfromtown/dal"
 )
@@ -182,7 +182,7 @@ func (sc *SpotifyController) checkSavedWithSpotify(artists <-chan dal.Artist, re
 		for artist := range artists {
 			existingArtist, err := sc.artistStore.GetArtistBySpotifyID(artist.SpotifyID)
 			if err != nil {
-				if err != sql.ErrNoRows {
+				if err != pgx.ErrNoRows {
 					log.Println(err)
 				} else {
 					notSaved <- artist
@@ -208,7 +208,7 @@ func (sc *SpotifyController) checkSavedByName(artists <-chan dal.Artist, readyAr
 		for artist := range artists {
 			existingArtists, err := sc.artistStore.GetArtistsByName(artist.Name)
 			if err != nil {
-				if err != sql.ErrNoRows {
+				if err != pgx.ErrNoRows {
 					log.Println(err)
 				} else {
 					notSavedArtists <- artist

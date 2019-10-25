@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -12,10 +13,7 @@ import (
 
 func main() {
 	r := mux.NewRouter()
-	db, err := dal.StartDB(os.Getenv("CLEARDB_DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := dal.StartDB()
 
 	artistStore := dal.NewArtistStore(db)
 	locationStore := dal.NewLocationStore(db)
@@ -39,8 +37,10 @@ func main() {
 		port = "8080"
 	}
 
-	err = http.ListenAndServe(":"+port, r)
+	err := http.ListenAndServe(":"+port, r)
 	if err != nil {
 		log.Println(err)
 	}
+
+	defer db.Close(context.Background())
 }

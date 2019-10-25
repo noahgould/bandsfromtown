@@ -17,6 +17,7 @@ import (
 type SpotifyClient struct {
 	clientID     string
 	clientSecret string
+	redirectURL  string
 }
 
 func NewSpotifyClient() *SpotifyClient {
@@ -25,24 +26,30 @@ func NewSpotifyClient() *SpotifyClient {
 
 	clientID, clientEnvExist := os.LookupEnv("SPOTIFY_ID")
 	clientSecret, clientSecretEnvExist := os.LookupEnv("SPOTIFY_SECRET")
-	if !clientEnvExist || !clientSecretEnvExist {
-		log.Fatal("spotify client id or secret not stored in environment variables.")
+	redirectURL, redirectURLEnvExist := os.LookupEnv("SPOTIFY_REDIRECT_URL")
+	if !clientEnvExist {
+		log.Fatal("spotify client id  not stored in environment variables.")
+	}
+	if !clientSecretEnvExist {
+		log.Fatal("spotify client secret not stored in environment variables.")
+	}
+	if !redirectURLEnvExist {
+		log.Fatal("spotify redirect url not stored in environment variables.")
 	}
 
 	return &SpotifyClient{
 		clientID:     clientID,
 		clientSecret: clientSecret,
+		redirectURL:  redirectURL,
 	}
 }
 
 func (sc *SpotifyClient) startSpotifySession(authCode string) spotifyTokenResponse {
 
-	redirectURI := "http://localhost:8080/spotify/login/"
-
 	form := url.Values{}
 	form.Add("grant_type", "authorization_code")
 	form.Add("code", authCode)
-	form.Add("redirect_uri", redirectURI)
+	form.Add("redirect_uri", sc.redirectURL)
 
 	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(form.Encode()))
 

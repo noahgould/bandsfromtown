@@ -2,16 +2,18 @@ package dal
 
 import (
 	//mysql driver
-	_ "github.com/go-sql-driver/mysql"
+	"context"
 
-	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v4"
+
 	"log"
 	"time"
 )
 
 //AlbumStore database access.
 type AlbumStore struct {
-	DB *sql.DB
+	DB *pgx.Conn
 }
 
 //Album of an artist.
@@ -23,7 +25,7 @@ type Album struct {
 }
 
 //NewAlbumStore returns a new connection to an album store
-func NewAlbumStore(db *sql.DB) AlbumStore {
+func NewAlbumStore(db *pgx.Conn) AlbumStore {
 	return AlbumStore{DB: db}
 }
 
@@ -35,22 +37,22 @@ func (as *AlbumStore) addAlbums(albums []Album) (newAlbums []Album) {
 }
 
 func (as *AlbumStore) addAlbum(album Album) (albumID int, err error) {
-	query := `
-	INSERT album
-	SET title = ,? artist_id = ?, release_date = ?
-	`
-	res, err := as.DB.Exec(query, album)
+	// query := `
+	// INSERT album
+	// SET title = ,? artist_id = ?, release_date = ?
+	// `
+	// res, err := as.DB.Exec(query, album)
+
+	query := `INSERT into album (title, artist_id, release_date)
+	values ($1, $2, $3) returning id;`
+
+	err = as.DB.QueryRow(context.Background(), query, album.Title, album.ArtistID, album.ReleaseDate).Scan(&albumID)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		log.Fatal(err)
-	}
-	album.ID = int(id)
 
-	return album.ID, nil
+	return albumID, nil
 }
 
 // GetAlbumsByArtistID returns all the albums that are linked to an artist.
@@ -62,7 +64,7 @@ func (as *AlbumStore) GetAlbumsByArtistID(artistID int) (a []Album, err error) {
 		WHERE
 			artist_id  = ?
 	`
-	rows, err := as.DB.Query(query, artistID)
+	rows, err := as.DB.Query(context.Background(), query, artistID)
 
 	if err != nil {
 		log.Fatal(err)

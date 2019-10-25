@@ -53,7 +53,7 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 		artists, err := ac.artistStore.GetArtistsByName(artistName)
 
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 
 		if artists == nil {
@@ -62,10 +62,11 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 			gMC := NewGoogleMapsController()
 			locationPtr, err := gMC.NormalizeLocation(artistLocation)
 
-			artistLocation = *locationPtr
 			if err != nil {
 				log.Println(err)
 			}
+
+			artistLocation = *locationPtr
 
 			artistLocation = *ac.checkForExistingLocation(artistLocation)
 
@@ -79,6 +80,19 @@ func (ac *ArtistController) LookupArtist(w http.ResponseWriter, r *http.Request)
 		} else {
 			for i, artist := range artists {
 				artists[i].Location, err = ac.locationStore.GetLocationByID(artist.Location.ID)
+
+				if artist.Location.GooglePlaceID == "-1" {
+					artistLocation := LookupArtistLocation(artistName)
+
+					gMC := NewGoogleMapsController()
+					normalizedLocation, err := gMC.NormalizeLocation(artistLocation)
+
+					if err != nil {
+						log.Println(err)
+					}
+
+					artistLocation = *ac.checkForExistingLocation(*normalizedLocation)
+				}
 
 				if artist.Location.Latitude == 0 && artist.Location.Longitude == 0 {
 					gMC := NewGoogleMapsController()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/noahgould/bandsfromtown/dal"
@@ -15,7 +16,8 @@ type GoogleMapsController struct {
 }
 
 func NewGoogleMapsController() *GoogleMapsController {
-	c, err := maps.NewClient(maps.WithAPIKey("AIzaSyA8oJVjkQZenxQIvA0EMXBAomiYjJwEqRE"))
+	gmapsAPIKey := os.Getenv("GMAPS_API_KEY")
+	c, err := maps.NewClient(maps.WithAPIKey(gmapsAPIKey))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,7 +52,7 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) (*dal.
 	placeResult, err := gmc.mapsClient.PlaceAutocomplete(context.Background(), place)
 
 	var normalizedLocation dal.Location
-	if err != nil {
+	if err != nil || len(placeResult.Predictions) == 0 {
 		log.Printf("loc string: %v. Error: %v.\n", locationString, err)
 		normalizedLocation = location
 		normalizedLocation.FullLocation = "location could not be found"
