@@ -50,7 +50,7 @@ func (gmc *GoogleMapsController) NormalizeLocation(location dal.Location) (*dal.
 	placeResult, err := gmc.mapsClient.PlaceAutocomplete(context.Background(), place)
 
 	var normalizedLocation dal.Location
-	if err != nil {
+	if err != nil || len(placeResult.Predictions) == 0 {
 		log.Printf("loc string: %v. Error: %v.\n", locationString, err)
 		normalizedLocation = location
 		normalizedLocation.FullLocation = "location could not be found"

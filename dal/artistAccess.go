@@ -2,11 +2,10 @@ package dal
 
 import (
 	//mysql driver
+	"context"
 	"log"
 
-	_ "github.com/go-sql-driver/mysql"
-
-	"database/sql"
+	"github.com/jackc/pgx/v4"
 )
 
 //Artist data type including some basic information and location.
@@ -21,36 +20,43 @@ type Artist struct {
 
 //ArtistStore database access.
 type ArtistStore struct {
-	DB *sql.DB
+	DB *pgx.Conn
 }
 
 //NewArtistStore returns a new connection to an Artist store
-func NewArtistStore(db *sql.DB) ArtistStore {
+func NewArtistStore(db *pgx.Conn) ArtistStore {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	return ArtistStore{DB: db}
 }
 
+//AddArtist saves an artist to the database.
 func (as *ArtistStore) AddArtist(artist Artist) (artistID int, err error) {
 	if artist.SpotifyID == "" {
 		artist.SpotifyID = "-1"
 	}
 
-	query := `
-	INSERT artist
-	SET name = ?, hometown = ?, genre = ?, spotify_id = ?, wikipedia_url = ?
-	`
-	res, err := as.DB.Exec(query, artist.Name, artist.Location.ID, artist.Genre, artist.SpotifyID, artist.WikipediaURL)
+	// query := `
+	// INSERT artist
+	// SET name = ?, hometown = ?, genre = ?, spotify_id = ?, wikipedia_url = ?
+	// `
+	// res, err := as.DB.Exec(query, artist.Name, artist.Location.ID, artist.Genre, artist.SpotifyID, artist.WikipediaURL)
+
+	query := `INSERT INTO bands_from_town.artist (name, hometown, genre, spotify_id, wikipedia_url)
+		values ($1, $2, $3, $4, $5) returning id;`
+
+	err = as.DB.QueryRow(context.Background(), query, artist.Name, artist.Location.ID, artist.Genre, artist.SpotifyID, artist.WikipediaURL).Scan(&artistID)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		log.Fatal(err)
-	}
-	artist.ID = int(id)
 
-	return artist.ID, nil
+	// id, err := res.LastInsertId()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// artist.ID = int(id)
+
+	return artist.ID, err
 }
 
 //GetArtistByID returns the artist with a matching id.
@@ -61,7 +67,7 @@ func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 		id = ?
 	`
 
-	res := as.DB.QueryRow(query, artistID)
+	res := as.DB.QueryRow(context.Background(), query, artistID)
 
 	if err != nil {
 		log.Fatal(err)
@@ -75,15 +81,15 @@ func (as *ArtistStore) GetArtistByID(artistID int) (artist Artist, err error) {
 //GetArtistBySpotifyID returns the artist with a matching spotify id.
 func (as *ArtistStore) GetArtistBySpotifyID(spotifyID string) (artist Artist, err error) {
 	if spotifyID == "-1" {
-		return artist, sql.ErrNoRows
+		return artist, pgx.ErrNoRows
 	}
 
 	query := `
-		SELECT * FROM artist
+		SELECT * FROM bands_from_town.artist
 		WHERE 
 		spotify_id = ?`
 
-	res := as.DB.QueryRow(query, spotifyID)
+	res := as.DB.QueryRow(context.Background(), query, spotifyID)
 
 	err = res.Scan(&artist.ID, &artist.Name, &artist.Location.ID, &artist.Genre, &artist.SpotifyID, &artist.WikipediaURL)
 
@@ -93,10 +99,10 @@ func (as *ArtistStore) GetArtistBySpotifyID(spotifyID string) (artist Artist, er
 //GetArtistsByName returns the artist with a matching name.
 func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, err error) {
 	query := `
-		SELECT * FROM artist
-		WHERE name = ?`
+		SELECT * FROM bands_from_town.artist
+		WHERE name = $1;`
 
-	rows, err := as.DB.Query(query, artistName)
+	rows, err := as.DB.Query(context.Background(), query, artistName)
 
 	if err != nil {
 		log.Println(err)
@@ -123,12 +129,13 @@ func (as *ArtistStore) GetArtistsByName(artistName string) (artists []Artist, er
 	return artists, err
 }
 
+//UpdateArtist updates an existing artist.
 func (as *ArtistStore) UpdateArtist(artist Artist) (artistId int, err error) {
-	query := `UPDATE artist
+	query := `UPDATE bands_from_town.artist
 		SET name = ?, hometown = ?, genre = ?, spotify_id = ?, wikipedia_url = ?
 		WHERE id = ?`
 
-	_, err = as.DB.Exec(query, artist.Name, artist.Location.ID, artist.Genre, artist.SpotifyID, artist.WikipediaURL, artist.ID)
+	_, err = as.DB.Exec(context.Background(), query, artist.Name, artist.Location.ID, artist.Genre, artist.SpotifyID, artist.WikipediaURL, artist.ID)
 
 	if err != nil {
 		log.Print(err)
