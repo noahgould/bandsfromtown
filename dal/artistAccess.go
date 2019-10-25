@@ -44,13 +44,9 @@ func (as *ArtistStore) AddArtist(artist Artist) (artistID int, err error) {
 		log.Fatal(err)
 	}
 
-	// id, err := res.LastInsertId()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// artist.ID = int(id)
+	artist.ID = artistID
 
-	return artist.ID, err
+	return artistID, err
 }
 
 //GetArtistByID returns the artist with a matching id.
