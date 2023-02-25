@@ -10,7 +10,7 @@ require (
 	github.com/jackc/pgx v3.6.0+incompatible
 	github.com/jackc/pgx/v4 v4.1.1
 	github.com/sergi/go-diff v1.0.0 // indirect
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd0 // indirect
 	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
